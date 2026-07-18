@@ -1,12 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 
-export default function HomePage() {
+export default function DashboardPage() {
   return (
     <main className="flex flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-4xl font-bold">Home</h1>
+      <h1 className="text-4xl font-bold">Environmental Dashboard</h1>
       <p className="text-muted-foreground">
-        Welcome to EcoLens AI, your platform for environmental monitoring and
-        pollution reporting.
+        View real-time environmental metrics and trends across monitored
+        locations.
       </p>
       <Badge>Coming Soon</Badge>
     </main>
