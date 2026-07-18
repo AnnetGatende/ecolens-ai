@@ -1,14 +1,20 @@
-import { Badge } from "@/components/ui/badge";
+import Hero from "@/components/home/Hero";
+import HowItWorks from "@/components/home/HowItWorks";
+import Features from "@/components/home/Features";
+import Stats from "@/components/home/Stats";
+import CTA from "@/components/home/CTA";
+import LiveStats from "@/components/home/LiveStats";
+
 
 export default function HomePage() {
   return (
-    <main className="flex flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-4xl font-bold">Home</h1>
-      <p className="text-muted-foreground">
-        Welcome to EcoLens AI, your platform for environmental monitoring and
-        pollution reporting.
-      </p>
-      <Badge>Coming Soon</Badge>
-    </main>
+    <>
+      <Hero />
+      <LiveStats /> 
+      <HowItWorks />
+      <Features />
+      <Stats />
+      <CTA />
+    </>
   );
 }
