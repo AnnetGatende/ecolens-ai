@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model PollutionReport {
+  id                    String   @id @default(cuid())
+
+  // Citizen Report
+  description           String
+  imageUrl              String?
+
+  latitude              Float
+  longitude             Float
+
+  userCategory          String?
+  userSeverity          String?
+
+  // Gemma AI Analysis
+  pollutionType         String
+  confidence            Float
+
+  severity              String
+
+  likelySource          String
+
+  predictedAQI          Int
+
+  healthRisk            String
+
+  recommendation        String
+
+  summary               String
+
+  // Workflow
+  status                ReportStatus @default(PENDING)
+
+  municipalAlertSent    Boolean @default(false)
+
+  hotspotDetected       Boolean @default(false)
+
+  createdAt             DateTime @default(now())
+
+  updatedAt             DateTime @updatedAt
+}
+
+enum ReportStatus {
+  PENDING
+  ANALYZED
+  ALERTED
+  RESOLVED
+}
