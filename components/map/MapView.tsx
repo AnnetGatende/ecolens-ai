@@ -2,67 +2,80 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import { useState } from "react";
-
-import MapLegend from "./MapLegend";
+import { useEffect, useRef, useState } from "react";
 
 import Map, {
   Marker,
   NavigationControl,
   FullscreenControl,
-  Popup,
+  MapRef,
 } from "react-map-gl/maplibre";
 
-const reports = [
-  {
-    id: 1,
-    name: "Likoni",
-    lng: 39.653,
-    lat: -4.091,
-    pollution: "Smoke",
-    severity: "High",
-    aqi: 172,
-  },
-  {
-    id: 2,
-    name: "Nyali",
-    lng: 39.696,
-    lat: -4.033,
-    pollution: "Dust",
-    severity: "Medium",
-    aqi: 91,
-  },
-  {
-    id: 3,
-    name: "Mvita",
-    lng: 39.668,
-    lat: -4.043,
-    pollution: "Waste Burning",
-    severity: "Critical",
-    aqi: 189,
-  },
-  {
-    id: 4,
-    name: "Bamburi",
-    lng: 39.724,
-    lat: -3.981,
-    pollution: "Clean Air",
-    severity: "Low",
-    aqi: 35,
-  },
-];
+import MapLegend from "./MapLegend";
+import PollutionPopup from "./PollutionPopup";
+
+type Report = {
+  id: string;
+  pollutionType: string;
+  severity: string;
+  predictedAQI: number;
+  imageUrl: string | null;
+  createdAt: string;
+  latitude: number;
+  longitude: number;
+};
 
 export default function MapView() {
-  const [selected, setSelected] = useState<
-    (typeof reports)[number] | null
-  >(null);
+  const mapRef = useRef<MapRef>(null);
+
+  const [reports, setReports] = useState<Report[]>([]);
+  const [selected, setSelected] = useState<Report | null>(null);
+
+  useEffect(() => {
+    async function loadReports() {
+      try {
+        const response = await fetch("/api/map");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch reports");
+        }
+
+        const data: Report[] = await response.json();
+
+        console.log("Loaded Reports:", data);
+
+        setReports(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    loadReports();
+  }, []);
+
+  function markerColor(severity: string) {
+    switch (severity.toLowerCase()) {
+      case "critical":
+        return "bg-red-600";
+
+      case "high":
+        return "bg-orange-500";
+
+      case "medium":
+        return "bg-yellow-400";
+
+      default:
+        return "bg-green-500";
+    }
+  }
 
   return (
-    <div className="relative h-[700px] rounded-3xl overflow-hidden shadow-xl">
+    <div className="relative h-[700px] overflow-hidden rounded-3xl shadow-xl">
 
       <MapLegend />
 
       <Map
+        ref={mapRef}
         initialViewState={{
           longitude: 39.6682,
           latitude: -4.0435,
@@ -71,75 +84,38 @@ export default function MapView() {
         mapStyle="https://tiles.openfreemap.org/styles/bright"
       >
         <NavigationControl position="top-right" />
+
         <FullscreenControl position="top-right" />
 
         {reports.map((report) => (
           <Marker
             key={report.id}
-            longitude={report.lng}
-            latitude={report.lat}
+            longitude={report.longitude}
+            latitude={report.latitude}
             anchor="bottom"
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
+            onClick={(event) => {
+              event.originalEvent.stopPropagation();
+
+              console.log(report);
+
               setSelected(report);
             }}
           >
-            <div
-              className={`w-6 h-6 rounded-full border-2 border-white shadow-lg cursor-pointer transition-all duration-300 hover:scale-125 ${
-                report.severity === "Critical"
-                  ? "bg-red-600 animate-pulse"
-                  : report.severity === "High"
-                  ? "bg-orange-500"
-                  : report.severity === "Medium"
-                  ? "bg-yellow-400"
-                  : "bg-green-500"
-              }`}
-            />
+            <button
+              className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white shadow-lg transition hover:scale-110 ${markerColor(
+                report.severity
+              )}`}
+            >
+              📍
+            </button>
           </Marker>
         ))}
 
         {selected && (
-          <Popup
-            longitude={selected.lng}
-            latitude={selected.lat}
-            closeOnClick={false}
+          <PollutionPopup
+            report={selected}
             onClose={() => setSelected(null)}
-          >
-            <div className="min-w-[220px] space-y-2">
-              <h2 className="font-bold text-lg">
-                {selected.name}
-              </h2>
-
-              <p>
-                <strong>Pollution:</strong>{" "}
-                {selected.pollution}
-              </p>
-
-              <p>
-                <strong>Severity:</strong>{" "}
-                {selected.severity}
-              </p>
-
-              <p>
-                <strong>AQI:</strong>{" "}
-                {selected.aqi}
-              </p>
-
-              <div
-                className={`mt-3 rounded-lg p-2 text-center font-semibold text-white ${
-                  selected.severity === "Critical"
-                    ? "bg-red-600"
-                    : selected.severity === "High"
-                    ? "bg-orange-500"
-                    : selected.severity === "Medium"
-                    ? "bg-yellow-500"
-                    : "bg-green-600"
-                }`}
-              >
-                {selected.severity} Pollution
-              </div>
-            </div>
-          </Popup>
+          />
         )}
       </Map>
     </div>

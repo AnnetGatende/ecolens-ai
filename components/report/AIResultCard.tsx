@@ -5,6 +5,11 @@ import {
   AlertTriangle,
   Wind,
   ShieldAlert,
+  Activity,
+  Factory,
+  HeartPulse,
+  ClipboardCheck,
+  Brain,
 } from "lucide-react";
 
 type Props = {
@@ -23,116 +28,193 @@ type Props = {
 export default function AIResultCard({ result }: Props) {
   if (!result) return null;
 
+  const severityColor =
+    result.severity.toLowerCase() === "high"
+      ? "bg-red-100 text-red-700"
+      : result.severity.toLowerCase() === "medium"
+      ? "bg-yellow-100 text-yellow-700"
+      : "bg-green-100 text-green-700";
+
+  const aqiColor =
+    result.aqi_prediction >= 200
+      ? "text-red-600"
+      : result.aqi_prediction >= 100
+      ? "text-yellow-600"
+      : "text-green-600";
+
   return (
-    <div className="rounded-2xl border bg-white shadow-xl p-6 animate-in fade-in duration-700">
+    <section className="overflow-hidden rounded-3xl border bg-white shadow-xl">
 
-      <div className="flex items-center gap-2 mb-6">
-        <Sparkles className="text-emerald-600" />
-        <h2 className="text-2xl font-bold">
-          Gemma AI Analysis
-        </h2>
-      </div>
+      {/* Header */}
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-8 text-white">
 
-        <div className="rounded-xl bg-emerald-50 p-4">
-          <Wind className="mb-2 text-emerald-600" />
+        <div className="flex items-center gap-3">
 
-          <p className="text-sm text-gray-500">
-            Pollution Type
-          </p>
+          <Sparkles className="h-8 w-8" />
 
-          <h3 className="font-bold text-lg">
-            {result.pollution_type}
-          </h3>
-        </div>
+          <div>
 
-        <div className="rounded-xl bg-blue-50 p-4">
-          <ShieldAlert className="mb-2 text-blue-600" />
+            <h2 className="text-3xl font-bold">
+              Gemma AI Environmental Analysis
+            </h2>
 
-          <p className="text-sm text-gray-500">
-            Confidence
-          </p>
+            <p className="mt-1 text-emerald-100">
+              AI-generated environmental assessment and recommendations.
+            </p>
 
-          <h3 className="font-bold text-lg">
-  {result.confidence}%
-</h3>
-        </div>
+          </div>
 
-        <div className="rounded-xl bg-red-50 p-4">
-          <AlertTriangle className="mb-2 text-red-600" />
-
-          <p className="text-sm text-gray-500">
-            Severity
-          </p>
-
-          <h3 className="font-bold text-lg">
-            {result.severity}
-          </h3>
-        </div>
-
-        <div className="rounded-xl bg-yellow-50 p-4">
-          <Wind className="mb-2 text-yellow-600" />
-
-          <p className="text-sm text-gray-500">
-            Predicted AQI
-          </p>
-
-          <h3 className="font-bold text-lg">
-            {result.aqi_prediction}
-          </h3>
         </div>
 
       </div>
 
-      <div className="mt-6 rounded-xl bg-indigo-50 p-4">
+      <div className="space-y-8 p-8">
 
-        <p className="font-semibold text-indigo-700">
-          Likely Source
-        </p>
+        {/* Statistics */}
 
-        <p className="mt-2">
-          {result.likely_source}
-        </p>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+
+          <div className="rounded-2xl border bg-emerald-50 p-6">
+
+            <Wind className="mb-4 h-7 w-7 text-emerald-600" />
+
+            <p className="text-sm text-gray-500">
+              Pollution Type
+            </p>
+
+            <h3 className="mt-2 font-bold">
+              {result.pollution_type}
+            </h3>
+
+          </div>
+
+          <div className="rounded-2xl border bg-blue-50 p-6">
+
+            <ShieldAlert className="mb-4 h-7 w-7 text-blue-600" />
+
+            <p className="text-sm text-gray-500">
+              AI Confidence
+            </p>
+
+            <h3 className="mt-2 text-4xl font-bold text-blue-700">
+              {result.confidence}%
+            </h3>
+
+          </div>
+
+          <div className="rounded-2xl border bg-red-50 p-6">
+
+            <AlertTriangle className="mb-4 h-7 w-7 text-red-600" />
+
+            <p className="text-sm text-gray-500">
+              Severity
+            </p>
+
+            <span
+              className={`mt-3 inline-flex rounded-full px-4 py-2 font-semibold ${severityColor}`}
+            >
+              {result.severity}
+            </span>
+
+          </div>
+
+          <div className="rounded-2xl border bg-yellow-50 p-6">
+
+            <Activity className="mb-4 h-7 w-7 text-yellow-600" />
+
+            <p className="text-sm text-gray-500">
+              Predicted AQI
+            </p>
+
+            <h3 className={`mt-2 text-4xl font-bold ${aqiColor}`}>
+              {result.aqi_prediction}
+            </h3>
+
+          </div>
+
+        </div>
+
+        {/* Analysis */}
+
+        <div className="grid gap-6 lg:grid-cols-2">
+
+          <div className="rounded-2xl border p-6">
+
+            <div className="mb-4 flex items-center gap-3">
+
+              <Factory className="text-indigo-600" />
+
+              <h3 className="text-xl font-bold">
+                Likely Source
+              </h3>
+
+            </div>
+
+            <p className="leading-8 text-gray-700">
+              {result.likely_source}
+            </p>
+
+          </div>
+
+          <div className="rounded-2xl border p-6">
+
+            <div className="mb-4 flex items-center gap-3">
+
+              <HeartPulse className="text-red-600" />
+
+              <h3 className="text-xl font-bold">
+                Health Risk
+              </h3>
+
+            </div>
+
+            <p className="leading-8 text-gray-700">
+              {result.health_risk}
+            </p>
+
+          </div>
+
+        </div>
+
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+
+          <div className="mb-4 flex items-center gap-3">
+
+            <ClipboardCheck className="text-emerald-600" />
+
+            <h3 className="text-xl font-bold text-emerald-800">
+              Recommended Action
+            </h3>
+
+          </div>
+
+          <p className="leading-8 text-gray-700">
+            {result.recommended_action}
+          </p>
+
+        </div>
+
+        <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6">
+
+          <div className="mb-4 flex items-center gap-3">
+
+            <Brain className="text-blue-700" />
+
+            <h3 className="text-xl font-bold text-blue-800">
+              AI Summary
+            </h3>
+
+          </div>
+
+          <p className="leading-8 text-gray-700">
+            {result.summary}
+          </p>
+
+        </div>
 
       </div>
 
-      <div className="mt-4 rounded-xl bg-red-50 p-4">
-
-        <p className="font-semibold text-red-700">
-          Health Risk
-        </p>
-
-        <p className="mt-2">
-          {result.health_risk}
-        </p>
-
-      </div>
-
-      <div className="mt-4 rounded-xl bg-gray-100 p-4">
-
-        <p className="font-semibold">
-          Recommended Action
-        </p>
-
-        <p className="mt-2">
-          {result.recommended_action}
-        </p>
-
-      </div>
-
-      <div className="mt-4 rounded-xl bg-emerald-50 p-4">
-
-        <p className="font-semibold text-emerald-700">
-          AI Summary
-        </p>
-
-        <p className="mt-2">
-          {result.summary}
-        </p>
-
-      </div>
-
-    </div>
+    </section>
   );
 }
