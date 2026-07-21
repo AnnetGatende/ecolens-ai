@@ -8,6 +8,9 @@ import {
   Wind,
   AlertTriangle,
   ArrowRight,
+  ImageOff,
+  Clock,
+  Calendar,
 } from "lucide-react";
 
 type Report = {
@@ -17,129 +20,112 @@ type Report = {
   predictedAQI: number;
   imageUrl: string | null;
   createdAt: string;
+  displayLocation?: string | null;
+};
+
+type Hotspot = {
+  displayLocation: string;
   latitude: number;
   longitude: number;
+  reports: Report[];
 };
 
 type Props = {
-  reports: Report[];
+  hotspot: Hotspot;
   onClose: () => void;
 };
 
-export default function ClusterPopup({
-  reports,
-  onClose,
-}: Props) {
-  if (!reports.length) return null;
-
-  const first = reports[0];
+export default function ClusterPopup({ hotspot, onClose }: Props) {
+  if (!hotspot.reports.length) return null;
 
   return (
     <Popup
-      longitude={first.longitude}
-      latitude={first.latitude}
+      longitude={hotspot.longitude}
+      latitude={hotspot.latitude}
       anchor="top"
       closeOnClick={false}
       onClose={onClose}
-      offset={25}
+      offset={30}
       maxWidth="420px"
+      className="z-50"
     >
-      <div className="w-[390px]">
-
-        <div className="mb-4 border-b pb-3">
-          <h2 className="text-xl font-bold">
-            Pollution Hotspot
+      <div className="w-[390px] p-1">
+        <div className="mb-4 border-b pb-4">
+          <h2 className="text-xl font-bold text-gray-900 flex items-start gap-2">
+            <MapPin className="text-blue-600 mt-1 shrink-0" size={22} />
+            <span>{hotspot.displayLocation}</span>
           </h2>
-
-          <p className="text-sm text-gray-500">
-            {reports.length} reports detected in this location
+          <p className="text-sm text-gray-500 font-medium mt-1 ml-8">
+            Neighborhood Hotspot • {hotspot.reports.length} Reports
           </p>
         </div>
 
-        <div className="max-h-[420px] space-y-4 overflow-y-auto pr-1">
-
-          {reports.map((report) => (
-            <div
-              key={report.id}
-              className="rounded-2xl border bg-white p-4 shadow-sm transition hover:shadow-md"
-            >
-
-              {report.imageUrl && (
-                <div className="relative mb-3 h-36 w-full overflow-hidden rounded-xl">
-                  <Image
-                    src={report.imageUrl}
-                    alt={report.pollutionType}
-                    fill
-                    sizes="390px"
-                    className="object-cover"
-                  />
-                </div>
-              )}
-
-              <h3 className="font-bold">
-                {report.pollutionType}
-              </h3>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-
-                <div className="rounded-lg bg-red-50 p-2">
-                  <AlertTriangle
-                    size={16}
-                    className="mb-1 text-red-600"
-                  />
-
-                  <p className="text-xs text-gray-500">
-                    Severity
-                  </p>
-
-                  <p className="font-semibold">
-                    {report.severity}
-                  </p>
-                </div>
-
-                <div className="rounded-lg bg-yellow-50 p-2">
-                  <Wind
-                    size={16}
-                    className="mb-1 text-yellow-600"
-                  />
-
-                  <p className="text-xs text-gray-500">
-                    AQI
-                  </p>
-
-                  <p className="font-semibold">
-                    {report.predictedAQI}
-                  </p>
-                </div>
-
-              </div>
-
-              <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                <MapPin size={15} />
-
-                {report.latitude.toFixed(5)},
-                {" "}
-                {report.longitude.toFixed(5)}
-              </div>
-
-              <div className="mt-2 text-sm text-gray-500">
-                {new Date(report.createdAt).toLocaleString()}
-              </div>
-
-              <Link
-                href={`/analysis/${report.id}`}
-                className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700"
+        <div className="max-h-[440px] space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+          {hotspot.reports.map((report) => {
+            const reportDate = new Date(report.createdAt);
+            
+            return (
+              <div
+                key={report.id}
+                className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md"
               >
-                View Full AI Report
+                {report.imageUrl ? (
+                  <div className="relative mb-3 h-40 w-full overflow-hidden rounded-xl bg-gray-100">
+                    <Image
+                      src={report.imageUrl}
+                      alt={report.pollutionType}
+                      fill
+                      sizes="390px"
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="relative mb-3 h-40 w-full overflow-hidden rounded-xl bg-slate-50 flex flex-col items-center justify-center text-slate-400 border border-slate-100">
+                    <ImageOff size={32} className="mb-2 opacity-50" />
+                    <span className="text-sm font-medium">No Image Available</span>
+                  </div>
+                )}
 
-                <ArrowRight size={18} />
-              </Link>
+                <h3 className="font-bold text-lg text-gray-800">
+                  {report.pollutionType}
+                </h3>
 
-            </div>
-          ))}
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-red-50 p-2.5">
+                    <AlertTriangle size={18} className="mb-1 text-red-600" />
+                    <p className="text-xs text-gray-500 font-medium">Severity</p>
+                    <p className="font-bold text-red-900">{report.severity}</p>
+                  </div>
 
+                  <div className="rounded-xl bg-yellow-50 p-2.5">
+                    <Wind size={18} className="mb-1 text-yellow-600" />
+                    <p className="text-xs text-gray-500 font-medium">AQI</p>
+                    <p className="font-bold text-yellow-900">{report.predictedAQI}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm text-gray-600 font-medium">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} className="text-blue-500" />
+                    {reportDate.toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-orange-500" />
+                    {reportDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+
+                <Link
+                  href={`/analysis/${report.id}`}
+                  className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 shadow-sm"
+                >
+                  View AI Report
+                  <ArrowRight size={18} />
+                </Link>
+              </div>
+            );
+          })}
         </div>
-
       </div>
     </Popup>
   );

@@ -18,34 +18,32 @@ model PollutionReport {
   latitude              Float
   longitude             Float
 
+  // Human-Readable Location
+  county                String?
+  subCounty             String?
+  ward                  String?
+  area                  String?
+  displayLocation       String?
+
   userCategory          String?
   userSeverity          String?
 
   // Gemma AI Analysis
   pollutionType         String
   confidence            Float
-
   severity              String
-
   likelySource          String
-
   predictedAQI          Int
-
   healthRisk            String
-
   recommendation        String
-
   summary               String
 
   // Workflow
   status                ReportStatus @default(PENDING)
-
   municipalAlertSent    Boolean @default(false)
-
   hotspotDetected       Boolean @default(false)
 
   createdAt             DateTime @default(now())
-
   updatedAt             DateTime @updatedAt
 }
 

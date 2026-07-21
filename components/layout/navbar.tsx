@@ -21,7 +21,6 @@ const NAV_LINKS = [
   { href: "/analysis", label: "AI Analysis" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/map", label: "Map" },
-  { href: "/about", label: "About" },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
