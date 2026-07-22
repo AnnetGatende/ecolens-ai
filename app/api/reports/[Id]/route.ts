@@ -3,14 +3,15 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ Id: string }> }
+  props: { params: Promise<{ Id: string }> }
 ) {
   try {
-    const { Id } = await params;
+    const params = await props.params;
+    const reportId = params.Id;
 
     const report = await prisma.pollutionReport.findUnique({
       where: {
-        id: Id,
+        id: reportId, // Maps the capital URL param to your Prisma 'id' field
       },
     });
 
