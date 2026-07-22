@@ -56,7 +56,7 @@ export default function MapView() {
   useEffect(() => {
     async function loadReports() {
       try {
-        const response = await fetch("/api/map");
+        const response = await fetch("/api/reports"); // Changed from /api/map to /api/reports
         if (!response.ok) throw new Error("Failed to fetch reports");
         const data: Report[] = await response.json();
         setReports(data);
