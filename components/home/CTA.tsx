@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Mail } from "lucide-react";
 
 export default function CTA() {
   return (
@@ -17,25 +17,53 @@ export default function CTA() {
           Equip your municipal teams with the intelligence they need to detect, predict, and eliminate hyper-local pollution hotspots before they escalate.
         </p>
         
-        <div className="mt-10 flex flex-wrap justify-center gap-4">
-          <Link href="/dashboard">
+        {/* NEW LAYOUT: Main column container */}
+        <div className="mt-10 flex flex-col items-center gap-6">
+          
+          {/* Top Row: Two main action buttons side-by-side */}
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/dashboard">
+              <Button
+                size="lg"
+                className="bg-emerald-500 text-slate-900 hover:bg-emerald-400 font-bold"
+              >
+                Enter Command Center
+              </Button>
+            </Link>
+            <Link href="/report">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white bg-transparent"
+              >
+                Submit Test Report
+              </Button>
+            </Link>
+          </div>
+
+          {/* Bottom Row: Contact Us button centered below */}
+          <a href="mailto:contact@annetdev.dpdns.org?subject=EcoLens%20Hackathon%20Inquiry">
             <Button
               size="lg"
-              className="bg-emerald-500 text-slate-900 hover:bg-emerald-400 font-bold"
+              className="bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700"
             >
-              Enter Command Center
+              <Mail className="mr-2 h-5 w-5 text-emerald-400" />
+              Contact Us
             </Button>
-          </Link>
-          <Link href="/report">
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-            >
-              Submit Test Report
-            </Button>
-          </Link>
+          </a>
+          
         </div>
+        
+        {/* Subtle text link for visibility */}
+        <p className="mt-10 text-sm text-slate-400">
+          Have questions? Email us directly at{" "}
+          <a 
+            href="mailto:contact@annetdev.dpdns.org" 
+            className="text-emerald-400 hover:text-emerald-300 transition-colors underline underline-offset-4"
+          >
+            contact@annetdev.dpdns.org
+          </a>
+        </p>
         
       </div>
     </section>
