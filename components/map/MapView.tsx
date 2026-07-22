@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import MapGL, { Marker, NavigationControl, FullscreenControl, MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
 import Supercluster from "supercluster";
 import { BBox } from "geojson";
+import { Search, Calendar, ChevronDown } from "lucide-react";
 
 import MapLegend from "./MapLegend";
 import ClusterPopup from "./ClusterPopup";
@@ -38,12 +39,16 @@ type CustomClusterProperties = {
   total_reports: number; 
 };
 
+type TimeframeOption = "ALL" | "TODAY" | "THIS_WEEK" | "THIS_MONTH";
+
 type SuperclusterFeature = Supercluster.ClusterFeature<CustomClusterProperties> | Supercluster.PointFeature<Hotspot>;
 
 export default function MapView() {
   const mapRef = useRef<MapRef>(null);
 
   const [reports, setReports] = useState<Report[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [timeframe, setTimeframe] = useState<TimeframeOption>("ALL");
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null);
 
   const [viewState, setViewState] = useState({
@@ -56,7 +61,7 @@ export default function MapView() {
   useEffect(() => {
     async function loadReports() {
       try {
-        const response = await fetch("/api/reports"); // Changed from /api/map to /api/reports
+        const response = await fetch("/api/reports"); 
         if (!response.ok) throw new Error("Failed to fetch reports");
         const data: Report[] = await response.json();
         setReports(data);
@@ -67,10 +72,45 @@ export default function MapView() {
     loadReports();
   }, []);
 
+  // --- ADVANCED MAP SEARCH & DATE FILTERING ---
+  const filteredReports = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    const now = new Date();
+
+    return reports.filter((report) => {
+      // Search text match
+      const matchSearch =
+        !query ||
+        report.pollutionType.toLowerCase().includes(query) ||
+        (report.displayLocation && report.displayLocation.toLowerCase().includes(query)) ||
+        (report.area && report.area.toLowerCase().includes(query));
+
+      // Timeframe match
+      const reportDate = new Date(report.createdAt);
+      let matchTimeframe = true;
+
+      if (timeframe === "TODAY") {
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        matchTimeframe = reportDate >= startOfToday;
+      } else if (timeframe === "THIS_WEEK") {
+        const sevenDaysAgo = new Date(now);
+        sevenDaysAgo.setDate(now.getDate() - 7);
+        matchTimeframe = reportDate >= sevenDaysAgo;
+      } else if (timeframe === "THIS_MONTH") {
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        matchTimeframe = reportDate >= thirtyDaysAgo;
+      }
+
+      return matchSearch && matchTimeframe;
+    });
+  }, [reports, searchQuery, timeframe]);
+
+  // Group filtered reports into geographic hotspots
   const hotspots = useMemo(() => {
     const map = new Map<string, { latSum: number; lonSum: number; reports: Report[]; displayLocation: string }>();
 
-    reports.forEach((report) => {
+    filteredReports.forEach((report) => {
       const key = report.displayLocation || `Grid-${report.latitude.toFixed(3)}-${report.longitude.toFixed(3)}`;
       const displayName = report.displayLocation || "Unknown Location";
 
@@ -109,7 +149,7 @@ export default function MapView() {
         reports: hs.reports,
       } as Hotspot;
     });
-  }, [reports]);
+  }, [filteredReports]);
 
   const supercluster = useMemo(() => {
     const sc = new Supercluster<Hotspot, CustomClusterProperties>({
@@ -158,7 +198,6 @@ export default function MapView() {
     return "bg-green-500";
   };
 
-  // Fixed: Changed from React.MouseEvent to the native DOM MouseEvent
   const handleClusterClick = (clusterId: number, longitude: number, latitude: number, e: MouseEvent) => {
     e.stopPropagation();
     const expansionZoom = Math.min(supercluster.getClusterExpansionZoom(clusterId), 20);
@@ -166,7 +205,47 @@ export default function MapView() {
   };
 
   return (
-    <div className="relative h-[700px] overflow-hidden rounded-3xl shadow-xl border border-gray-200">
+    <div className="relative h-[700px] overflow-hidden rounded-3xl shadow-xl border border-gray-200 bg-slate-50">
+      
+      {/* FLOATING MAP SEARCH & TIMEFRAME BAR */}
+      <div className="absolute top-4 left-4 z-10 flex flex-col sm:flex-row items-center gap-2 w-full max-w-xs sm:max-w-md">
+        
+        {/* Search Input */}
+        <div className="relative shadow-lg rounded-xl w-full">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className="h-4 w-4 text-slate-500" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search location or hazard..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full rounded-xl border border-white/20 bg-white/90 backdrop-blur-md py-3 pl-9 pr-3 text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-xs font-medium"
+          />
+        </div>
+
+        {/* Date Filter Dropdown */}
+        <div className="relative shadow-lg rounded-xl w-full sm:w-36 shrink-0">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none">
+            <Calendar className="h-3.5 w-3.5 text-slate-500" />
+          </div>
+          <select
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value as TimeframeOption)}
+            className="block w-full rounded-xl border border-white/20 bg-white/90 backdrop-blur-md py-3 pl-8 pr-6 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-xs font-bold appearance-none cursor-pointer"
+          >
+            <option value="ALL">All Time</option>
+            <option value="TODAY">Today</option>
+            <option value="THIS_WEEK">This Week</option>
+            <option value="THIS_MONTH">This Month</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+          </div>
+        </div>
+
+      </div>
+
       <MapLegend />
 
       <MapGL

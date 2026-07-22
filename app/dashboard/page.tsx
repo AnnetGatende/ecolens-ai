@@ -4,10 +4,9 @@ import { useEffect, useState, useMemo } from "react";
 import { 
   AlertTriangle, Wind, Truck, Droplets, Activity, MapPin, 
   Satellite, Radio, CheckCircle2, Clock, Loader2, RotateCcw, 
-  ChevronDown, ChevronUp, Lock, ShieldCheck, ArrowRight
+  ChevronDown, ChevronUp, Lock, ShieldCheck, ArrowRight, Search, Calendar
 } from "lucide-react";
 
-// ... (Keep your existing types Report and HotspotGroup here) ...
 type Report = {
   id: string;
   pollutionType: string;
@@ -29,20 +28,23 @@ type HotspotGroup = {
   isCompletelyDispatched: boolean; 
 };
 
+type TimeframeOption = "ALL" | "TODAY" | "THIS_WEEK" | "THIS_MONTH";
+
 export default function DashboardPage() {
   // --- AUTHENTICATION STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinCode, setPinCode] = useState("");
   const [authError, setAuthError] = useState(false);
 
-  // --- DASHBOARD STATE ---
+  // --- DASHBOARD & FILTER STATE ---
   const [reports, setReports] = useState<Report[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [timeframe, setTimeframe] = useState<TimeframeOption>("ALL");
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<Record<string, boolean>>({});
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    // Only fetch data if they pass the login screen
     if (!isAuthenticated) return;
 
     async function loadReports() {
@@ -61,10 +63,45 @@ export default function DashboardPage() {
     loadReports();
   }, [isAuthenticated]);
 
+  // --- ADVANCED FILTERING (Search + Timeframe) ---
+  const filteredReports = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    const now = new Date();
+
+    return reports.filter((report) => {
+      // 1. Text Search Filter
+      const matchSearch =
+        !query ||
+        report.id.toLowerCase().includes(query) ||
+        report.pollutionType.toLowerCase().includes(query) ||
+        report.displayLocation?.toLowerCase().includes(query);
+
+      // 2. Timeframe Filter
+      const reportDate = new Date(report.createdAt);
+      let matchTimeframe = true;
+
+      if (timeframe === "TODAY") {
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        matchTimeframe = reportDate >= startOfToday;
+      } else if (timeframe === "THIS_WEEK") {
+        const sevenDaysAgo = new Date(now);
+        sevenDaysAgo.setDate(now.getDate() - 7);
+        matchTimeframe = reportDate >= sevenDaysAgo;
+      } else if (timeframe === "THIS_MONTH") {
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 30);
+        matchTimeframe = reportDate >= thirtyDaysAgo;
+      }
+
+      return matchSearch && matchTimeframe;
+    });
+  }, [reports, searchQuery, timeframe]);
+
+  // --- HOTSPOT GROUPING (Derived from filtered reports) ---
   const hotspotGroups = useMemo(() => {
     const map = new Map<string, HotspotGroup>();
 
-    reports.forEach((report) => {
+    filteredReports.forEach((report) => {
       const groupId = report.displayLocation || `Grid-${report.latitude.toFixed(3)}-${report.longitude.toFixed(3)}`;
       const displayName = report.displayLocation || `Unmapped Zone (${report.latitude.toFixed(3)}, ${report.longitude.toFixed(3)})`;
       
@@ -92,11 +129,12 @@ export default function DashboardPage() {
     });
 
     return Array.from(map.values()).sort((a, b) => b.maxAQI - a.maxAQI);
-  }, [reports]);
+  }, [filteredReports]);
 
-  const activeIncidents = reports.filter(r => r.status !== "RESOLVED").length;
-  const criticalSpikes = reports.filter(r => r.predictedAQI > 150 && r.status !== "RESOLVED").length;
-  const resourcesDeployed = reports.filter(r => r.status === "RESOLVED").length;
+  // Dynamic Metrics based on filtered criteria
+  const activeIncidents = filteredReports.filter(r => r.status !== "RESOLVED").length;
+  const criticalSpikes = filteredReports.filter(r => r.predictedAQI > 150 && r.status !== "RESOLVED").length;
+  const resourcesDeployed = filteredReports.filter(r => r.status === "RESOLVED").length;
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
@@ -128,10 +166,8 @@ export default function DashboardPage() {
     }
   };
 
-  // --- LOGIN HANDLER ---
-  const handleLogin = (e: React.FormEvent) => {
+  function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    // The master PIN for the demo
     if (pinCode === "2026") {
       setIsAuthenticated(true);
       setAuthError(false);
@@ -139,9 +175,8 @@ export default function DashboardPage() {
       setAuthError(true);
       setPinCode("");
     }
-  };
+  }
 
-  // --- IF NOT AUTHENTICATED, SHOW LOGIN GATE ---
   if (!isAuthenticated) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-900 px-6">
@@ -192,7 +227,6 @@ export default function DashboardPage() {
     );
   }
 
-  // --- IF AUTHENTICATED, SHOW THE FULL DASHBOARD ---
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-xl font-medium text-slate-600">
@@ -204,9 +238,6 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 pb-12">
-      {/* ... (Keep ALL of your existing Dashboard return JSX exactly as it was) ... */}
-      
-      {/* Top Banner */}
       <div className="bg-slate-900 px-6 py-3 text-sm text-slate-300 flex flex-wrap items-center justify-center gap-6">
         <span className="flex items-center gap-2 font-medium text-emerald-400">
           <Activity size={16} /> EcoLens Core Active
@@ -234,10 +265,9 @@ export default function DashboardPage() {
             </p>
           </div>
           
-          {/* A logout button for the admin! */}
           <button 
             onClick={() => setIsAuthenticated(false)}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 shrink-0"
           >
             End Session
           </button>
@@ -245,26 +275,67 @@ export default function DashboardPage() {
 
         {/* Refined Metrics Row */}
         <div className="mb-10 grid gap-6 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Active Incidents</p>
             <p className="mt-2 text-4xl font-bold text-slate-800">{activeIncidents}</p>
           </div>
-          <div className="rounded-2xl border border-red-100 bg-red-50 p-6 shadow-sm">
+          <div className="rounded-2xl border border-red-100 bg-red-50 p-6 shadow-sm transition-all hover:shadow-md">
             <p className="text-sm font-semibold text-red-600 uppercase tracking-wider">24h Critical Spikes</p>
             <p className="mt-2 text-4xl font-bold text-red-700">{criticalSpikes}</p>
           </div>
-          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm">
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm transition-all hover:shadow-md">
             <p className="text-sm font-semibold text-emerald-600 uppercase tracking-wider">Resources Deployed</p>
             <p className="mt-2 text-4xl font-bold text-emerald-700">{resourcesDeployed}</p>
           </div>
         </div>
 
-        {/* Actionable Neighborhood Containers */}
+        {/* Search Bar & Date Filter Controls */}
         <div className="mb-10">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <AlertTriangle className="text-orange-500" /> 
-            Sector Incident Reports
-          </h2>
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <AlertTriangle className="text-orange-500" /> 
+              Sector Incident Reports
+            </h2>
+            
+            {/* COMBINED CONTROLS */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+              
+              {/* Search Input */}
+              <div className="relative w-full sm:w-80">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <Search className="h-5 w-5 text-slate-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search ID, Location, or Hazard..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:text-sm font-medium"
+                />
+              </div>
+
+              {/* Timeframe Select Dropdown */}
+              <div className="relative w-full sm:w-48">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <Calendar className="h-4 w-4 text-slate-500" />
+                </div>
+                <select
+                  value={timeframe}
+                  onChange={(e) => setTimeframe(e.target.value as TimeframeOption)}
+                  className="block w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-9 pr-8 text-slate-900 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:text-sm font-semibold appearance-none cursor-pointer"
+                >
+                  <option value="ALL">All Time</option>
+                  <option value="TODAY">Today</option>
+                  <option value="THIS_WEEK">This Week</option>
+                  <option value="THIS_MONTH">This Month</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <ChevronDown className="h-4 w-4 text-slate-400" />
+                </div>
+              </div>
+
+            </div>
+          </div>
           
           <div className="grid gap-6 lg:grid-cols-2">
             {hotspotGroups.map((group) => {
@@ -274,7 +345,6 @@ export default function DashboardPage() {
               return (
                 <div key={group.id} className={`flex flex-col rounded-3xl border shadow-sm transition-all ${group.isCompletelyDispatched ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200 bg-white'}`}>
                   
-                  {/* Container Header */}
                   <div 
                     onClick={() => toggleGroup(group.id)}
                     className="flex cursor-pointer items-start justify-between p-6 hover:bg-slate-50/50 rounded-t-3xl"
@@ -304,7 +374,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Container Body (The Individual Reports) */}
                   {isExpanded && (
                     <div className="border-t border-slate-100 bg-slate-50 p-4 rounded-b-3xl">
                       <div className="flex flex-col gap-3">
@@ -322,6 +391,7 @@ export default function DashboardPage() {
                                     AQI {report.predictedAQI}
                                   </span>
                                   <span>{new Date(report.createdAt).toLocaleString()}</span>
+                                  <span className="text-slate-400">ID: {report.id.slice(0,8)}...</span>
                                 </div>
                               </div>
 
@@ -361,7 +431,6 @@ export default function DashboardPage() {
                     </div>
                   )}
                   
-                  {/* Container Footer */}
                   {!isExpanded && group.isCompletelyDispatched && (
                     <div className="bg-emerald-500 py-1.5 text-center text-xs font-bold uppercase tracking-wider text-white rounded-b-2xl">
                       Sector Secured
@@ -375,7 +444,11 @@ export default function DashboardPage() {
               <div className="col-span-2 rounded-3xl border border-dashed border-slate-300 p-12 text-center">
                 <Wind className="mx-auto h-12 w-12 text-slate-400 mb-4" />
                 <h3 className="text-lg font-bold text-slate-700">Airspace Clear</h3>
-                <p className="text-slate-500">No active hotspots detected by EcoLens.</p>
+                <p className="text-slate-500">
+                  {searchQuery || timeframe !== "ALL"
+                    ? "No reports match your search and timeframe filters."
+                    : "No active hotspots detected by EcoLens."}
+                </p>
               </div>
             )}
           </div>
