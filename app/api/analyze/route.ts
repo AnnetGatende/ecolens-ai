@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { uploadImage } from "@/lib/cloudinary";
-import { reverseGeocode } from "@/lib/geocoding"; // Added Reverse Geocoding
+import { reverseGeocode } from "@/lib/geocoding"; 
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_API_KEY!,
@@ -38,10 +38,11 @@ export async function POST(req: NextRequest) {
     const imageUrl = uploadedImage.secure_url;
     const base64Image = buffer.toString("base64");
 
+    // UPDATED PROMPT: Requesting dual-language output
     const prompt = `
-  You are EcoLens AI.
+  You are EcoLens AI, an expert bilingual environmental analyst system operating in Kenya.
   
-  Analyze this pollution report.
+  Analyze this pollution report based on the provided image and data.
   
   Description:
   ${description}
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
   User Severity:
   ${severity || "Auto Detect"}
   
-  Return ONLY valid JSON.
+  Return ONLY valid JSON. Provide the summary and recommended_action in BOTH English and Kiswahili.
   
   {
     "pollution_type":"",
@@ -66,7 +67,9 @@ export async function POST(req: NextRequest) {
     "aqi_prediction":0,
     "health_risk":"",
     "recommended_action":"",
-    "summary":""
+    "summary":"",
+    "recommended_action_sw":"",
+    "summary_sw":""
   }
   
   Do not use markdown.
@@ -105,14 +108,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Convert coordinates to numbers for geocoding and database
     const latNum = Number(latitude);
     const lonNum = Number(longitude);
 
-    // Fetch the human-readable location data
     const locationData = await reverseGeocode(latNum, lonNum);
 
-    // Save report to PostgreSQL
+    // UPDATED DATABASE INSERT: Saving the Kiswahili fields
     const savedReport = await prisma.pollutionReport.create({
       data: {
         description,
@@ -120,7 +121,6 @@ export async function POST(req: NextRequest) {
         latitude: latNum,
         longitude: lonNum,
 
-        // Inject the newly fetched location details
         county: locationData.county,
         subCounty: locationData.subCounty,
         ward: locationData.ward,
@@ -135,8 +135,14 @@ export async function POST(req: NextRequest) {
         likelySource: analysis.likely_source,
         predictedAQI: Number(analysis.aqi_prediction),
         healthRisk: analysis.health_risk,
+        
+        // English
         recommendation: analysis.recommended_action,
         summary: analysis.summary,
+        
+        // Kiswahili
+        recommendation_sw: analysis.recommended_action_sw,
+        summary_sw: analysis.summary_sw,
       },
     });
 
@@ -148,7 +154,6 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error(error);
 
-    // Safely extract the error message to avoid using 'any'
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
 
     return NextResponse.json(

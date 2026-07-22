@@ -1,32 +1,39 @@
-import {
-  Satellite,
-  MapPinned,
-  BrainCircuit,
-  Truck,
-} from "lucide-react";
+"use client";
+
+import { Satellite, MapPinned, BrainCircuit, Truck } from "lucide-react";
+import { useLanguage } from "@/components/LanguageContext";
 
 export default function Features() {
+  const { language } = useLanguage();
 
   const features = [
     {
       icon: Satellite,
-      title: "Multi-Source Data Fusion",
-      description: "Combines citizen-uploaded visual evidence with live OpenAQ sensor readings and Sentinel-2 satellite imagery.",
+      title: language === "en" ? "Multi-Source Data Fusion" : "Muunganiko wa Data Mbalimbali",
+      description: language === "en" 
+        ? "Combines citizen-uploaded visual evidence with live OpenAQ sensor readings and Sentinel-2 satellite imagery."
+        : "Inaunganisha ushahidi wa picha wa wananchi na usomaji wa moja kwa moja wa OpenAQ na picha za satelaiti za Sentinel-2.",
     },
     {
       icon: BrainCircuit,
-      title: "24-Hour AI Forecasting",
-      description: "Utilizes multimodal Gemma AI to analyze threats and predict localized Air Quality Index (AQI) spikes.",
+      title: language === "en" ? "24-Hour AI Forecasting" : "Utabiri wa AI wa Saa 24",
+      description: language === "en"
+        ? "Utilizes multimodal Gemma AI to analyze threats and predict localized Air Quality Index (AQI) spikes."
+        : "Inatumia Gemma AI kuchanganua vitisho na kutabiri ongezeko la Kielezo cha Ubora wa Hewa (AQI) katika maeneo maalum.",
     },
     {
       icon: MapPinned,
-      title: "Actionable Hotspot Mapping",
-      description: "Automatically groups isolated incident reports into distinct, prioritized neighborhood zones for intervention.",
+      title: language === "en" ? "Actionable Hotspot Mapping" : "Uchoraji wa Maeneo Hatari",
+      description: language === "en"
+        ? "Automatically groups isolated incident reports into distinct, prioritized neighborhood zones for intervention."
+        : "Inapanga ripoti za matukio kibinafsi kiotomatiki kuwa kanda maalum za mitaa ili kurahisisha uingiliaji kati.",
     },
     {
       icon: Truck,
-      title: "Rapid Resource Deployment",
-      description: "A complete dispatch dashboard allowing officials to instantly deploy water-mist cannons and cleanup crews.",
+      title: language === "en" ? "Rapid Resource Deployment" : "Usambazaji wa Rasilimali Haraka",
+      description: language === "en"
+        ? "A complete dispatch dashboard allowing officials to instantly deploy water-mist cannons and cleanup crews."
+        : "Dashibodi kamili inawaruhusu maafisa kusambaza magari ya maji na timu za usafi mara moja.",
     },
   ];
 
@@ -34,7 +41,7 @@ export default function Features() {
     <section className="bg-slate-50 py-24">
       <div className="mx-auto max-w-7xl px-6">
         <h2 className="text-center text-4xl font-bold text-slate-900">
-          Enterprise Civic Infrastructure
+          {language === "en" ? "Enterprise Civic Infrastructure" : "Miundombinu ya Kijamii ya Kiwango cha Juu"}
         </h2>
         
         <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-4">

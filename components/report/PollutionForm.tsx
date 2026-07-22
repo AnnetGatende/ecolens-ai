@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useLanguage } from "@/components/LanguageContext"; // 1. Imported the language hook
 
 type Props = {
   image: File | null;
-  latitude: number |null;
+  latitude: number | null;
   longitude: number | null;
 };
 
@@ -18,70 +19,61 @@ export default function PollutionForm({
   longitude,
 }: Props) {
   const router = useRouter();
+  const { language } = useLanguage(); // 2. Grabbed the current language
 
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [severity, setSeverity] = useState("");
-
   const [loading, setLoading] = useState(false);
 
+  // Changed errors to simple booleans/keys so they instantly translate if the user flips the toggle while an error is showing
   const [errors, setErrors] = useState({
-    image: "",
-    description: "",
-    location: "",
+    image: false,
+    description: false,
+    location: false,
   });
 
   function validate() {
     const newErrors = {
-      image: "",
-      description: "",
-      location: "",
+      image: false,
+      description: false,
+      location: false,
     };
 
     let valid = true;
 
     if (!image) {
-      newErrors.image = "Please upload a pollution photo.";
+      newErrors.image = true;
       valid = false;
     }
 
     if (description.trim().length < 10) {
-      newErrors.description =
-        "Please provide a meaningful description (minimum 10 characters).";
+      newErrors.description = true;
       valid = false;
     }
 
     if (latitude === null || longitude === null) {
-      newErrors.location =
-        "Unable to detect your current location.";
+      newErrors.location = true;
       valid = false;
     }
 
     setErrors(newErrors);
-
     return valid;
   }
 
   async function analyze() {
     if (!validate()) return;
-
     if (!image) return;
 
     setLoading(true);
 
     try {
       const formData = new FormData();
-
       formData.append("image", image);
-
       formData.append("description", description);
-
       formData.append("latitude", latitude!.toString());
-
       formData.append("longitude", longitude!.toString());
-
       formData.append("category", category);
-
       formData.append("severity", severity);
 
       const response = await fetch("/api/analyze", {
@@ -94,145 +86,148 @@ export default function PollutionForm({
       console.log("Analyze Response:", data);
 
       if (!data.success) {
-        alert(data.error || "Gemma failed to analyze the report.");
+        alert(
+          data.error || 
+          (language === "en" ? "Gemma failed to analyze the report." : "Gemma imeshindwa kuchanganua ripoti.")
+        );
         return;
       }
 
       router.push(`/analysis/${data.reportId}`);
-
     } catch (error) {
       console.error(error);
-
-      alert("Something went wrong.");
+      alert(language === "en" ? "Something went wrong." : "Kuna kitu kimeenda kombo.");
     } finally {
       setLoading(false);
     }
   }
 
+  // Helper arrays for our dropdowns and buttons to keep JSX clean
+  const categories = [
+    { value: "Smoke", en: "Smoke", sw: "Moshi" },
+    { value: "Dust", en: "Dust", sw: "Vumbi" },
+    { value: "Garbage Burning", en: "Garbage Burning", sw: "Uchomaji Taka" },
+    { value: "Industrial Emissions", en: "Industrial Emissions", sw: "Moshi wa Viwanda" },
+    { value: "Water Pollution", en: "Water Pollution", sw: "Uchafuzi wa Maji" },
+    { value: "Chemical Spill", en: "Chemical Spill", sw: "Mwagiko wa Kemikali" },
+  ];
+
+  const severityLevels = [
+    { value: "Low", en: "Low", sw: "Chini" },
+    { value: "Medium", en: "Medium", sw: "Kati" },
+    { value: "High", en: "High", sw: "Juu" },
+  ];
+
   return (
     <div className="rounded-2xl border bg-white shadow-lg p-6 space-y-6">
-
+      
+      {/* Header Section */}
       <div>
         <h2 className="text-2xl font-bold">
-          Pollution Details
+          {language === "en" ? "Pollution Details" : "Maelezo ya Uchafuzi"}
         </h2>
-
         <p className="text-gray-500 mt-1">
-          Help Gemma understand the environmental incident.
+          {language === "en" 
+            ? "Help Gemma understand the environmental incident." 
+            : "Saidia Gemma kuelewa tukio hili la kimazingira."}
         </p>
       </div>
 
+      {/* Error Messages */}
       {errors.image && (
         <p className="text-red-600 font-medium">
-          📷 {errors.image}
+          📷 {language === "en" ? "Please upload a pollution photo." : "Tafadhali pakia picha ya uchafuzi."}
         </p>
       )}
 
       {errors.location && (
         <p className="text-red-600 font-medium">
-          📍 {errors.location}
+          📍 {language === "en" ? "Unable to detect your current location." : "Imeshindwa kupata eneo lako la sasa."}
         </p>
       )}
 
+      {/* Description Input */}
       <div>
-
         <label className="font-semibold">
-          Description
+          {language === "en" ? "Description" : "Maelezo"}
         </label>
-
         <Textarea
           rows={6}
-          placeholder="Describe the pollution incident..."
+          placeholder={language === "en" ? "Describe the pollution incident..." : "Eleza tukio la uchafuzi..."}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          className="mt-2"
         />
-
         <div className="flex justify-between mt-2">
-
           {errors.description ? (
             <span className="text-red-600 text-sm">
-              {errors.description}
+              {language === "en" 
+                ? "Please provide a meaningful description (minimum 10 characters)." 
+                : "Tafadhali toa maelezo ya kutosha (angalau herufi 10)."}
             </span>
           ) : (
             <span />
           )}
-
           <span className="text-sm text-gray-500">
             {description.length}/500
           </span>
-
         </div>
-
       </div>
 
+      {/* Category Selection */}
       <div>
-
         <label className="font-semibold">
-          Pollution Category
+          {language === "en" ? "Pollution Category" : "Aina ya Uchafuzi"}
         </label>
-
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           className="w-full rounded-lg border p-3 mt-2"
         >
           <option value="">
-            Let Gemma Detect Automatically
+            {language === "en" ? "Let Gemma Detect Automatically" : "Ruhusu Gemma Itambue Moja kwa Moja"}
           </option>
-
-          <option>Smoke</option>
-
-          <option>Dust</option>
-
-          <option>Garbage Burning</option>
-
-          <option>Industrial Emissions</option>
-
-          <option>Water Pollution</option>
-
-          <option>Chemical Spill</option>
-
+          {categories.map((cat) => (
+            <option key={cat.value} value={cat.value}>
+              {language === "en" ? cat.en : cat.sw}
+            </option>
+          ))}
         </select>
-
       </div>
 
+      {/* Severity Buttons */}
       <div>
-
         <label className="font-semibold">
-          Estimated Severity (Optional)
+          {language === "en" ? "Estimated Severity (Optional)" : "Kadirio la Ukali (Sio Lazima)"}
         </label>
-
         <div className="flex gap-3 mt-3">
-
-          {["Low", "Medium", "High"].map((level) => (
+          {severityLevels.map((level) => (
             <button
-              key={level}
+              key={level.value}
               type="button"
-              onClick={() => setSeverity(level)}
+              onClick={() => setSeverity(level.value)}
               className={`px-5 py-2 rounded-full border transition ${
-                severity === level
+                severity === level.value
                   ? "bg-emerald-600 text-white"
                   : "hover:bg-emerald-50"
               }`}
             >
-              {level}
+              {language === "en" ? level.en : level.sw}
             </button>
           ))}
-
         </div>
-
       </div>
 
+      {/* Submit Button */}
       <Button
         onClick={analyze}
         disabled={loading}
         className="w-full h-14 text-lg"
       >
         {loading
-          ? "Analyzing with Gemma..."
-          : "✨ Analyze with Gemma"}
+          ? (language === "en" ? "Analyzing with Gemma..." : "Inachanganua na Gemma...")
+          : (language === "en" ? "✨ Analyze with Gemma" : "✨ Changanua na Gemma")}
       </Button>
-
     </div>
   );
 }

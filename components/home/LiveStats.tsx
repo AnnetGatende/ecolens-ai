@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  AlertTriangle,
-  MapPin,
-  Flame,
-  CheckCircle2,
-  Loader2
-} from "lucide-react";
+import { AlertTriangle, MapPin, Flame, CheckCircle2, Loader2 } from "lucide-react";
+import { useLanguage } from "@/components/LanguageContext";
 
 type Report = {
   id: string;
@@ -19,10 +14,10 @@ type Report = {
 };
 
 export default function LiveStats() {
+  const { language } = useLanguage();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch real data from your database API
   useEffect(() => {
     async function loadStats() {
       try {
@@ -40,20 +35,10 @@ export default function LiveStats() {
     loadStats();
   }, []);
 
-  // Calculate exact metrics
   const calculatedStats = useMemo(() => {
-    // 1. Active Incidents: Only reports that are NOT resolved
     const activeIncidents = reports.filter((r) => r.status !== "RESOLVED").length;
-    
-    // 2. Total Reports Mapped: Every single incident reported in the system
     const totalMapped = reports.length;
-
-    // 3. Critical Spikes: Unresolved reports with dangerous AQI
-    const criticalSpikes = reports.filter(
-      (r) => r.predictedAQI > 150 && r.status !== "RESOLVED"
-    ).length;
-
-    // 4. Resources Deployed: Reports that have been marked as resolved
+    const criticalSpikes = reports.filter((r) => r.predictedAQI > 150 && r.status !== "RESOLVED").length;
     const resourcesDeployed = reports.filter((r) => r.status === "RESOLVED").length;
 
     return { activeIncidents, totalMapped, criticalSpikes, resourcesDeployed };
@@ -61,30 +46,30 @@ export default function LiveStats() {
 
   const stats = [
     {
-      title: "Active Incidents",
+      title: language === "en" ? "Active Incidents" : "Matukio Yanayoendelea",
       value: calculatedStats.activeIncidents,
-      subtitle: "Pending verification",
+      subtitle: language === "en" ? "Pending verification" : "Inasubiri uthibitisho",
       icon: AlertTriangle,
       color: "text-orange-500",
     },
     {
-      title: "Total Reports Mapped",
+      title: language === "en" ? "Total Reports Mapped" : "Jumla ya Ripoti Kwenye Ramani",
       value: calculatedStats.totalMapped,
-      subtitle: "Reflecting on live map",
+      subtitle: language === "en" ? "Reflecting on live map" : "Inaonekana kwenye ramani ya moja kwa moja",
       icon: MapPin,
       color: "text-blue-500",
     },
     {
-      title: "Critical 24h Spikes",
+      title: language === "en" ? "Critical 24h Spikes" : "Ongezeko Hatari (Saa 24)",
       value: calculatedStats.criticalSpikes,
-      subtitle: "Forecasted AQI > 150",
+      subtitle: language === "en" ? "Forecasted AQI > 150" : "Makadirio ya AQI > 150",
       icon: Flame,
       color: "text-red-500",
     },
     {
-      title: "Resources Deployed",
+      title: language === "en" ? "Resources Deployed" : "Rasilimali Zilizosambazwa",
       value: calculatedStats.resourcesDeployed,
-      subtitle: "Crews currently active",
+      subtitle: language === "en" ? "Crews currently active" : "Timu zinafanya kazi sasa",
       icon: CheckCircle2,
       color: "text-emerald-500",
     },
@@ -95,10 +80,12 @@ export default function LiveStats() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-14">
           <h2 className="text-4xl font-bold text-slate-900">
-            Live Network Intelligence
+            {language === "en" ? "Live Network Intelligence" : "Ujasusi wa Mtandao wa Moja kwa Moja"}
           </h2>
           <p className="text-slate-600 mt-3 max-w-2xl mx-auto">
-            Real-time environmental monitoring across the municipality, powered by citizen crowdsourcing and Google AI.
+            {language === "en"
+              ? "Real-time environmental monitoring across the municipality, powered by citizen crowdsourcing and Google AI."
+              : "Ufuatiliaji wa mazingira wa wakati halisi katika manispaa nzima, unaoendeshwa na wananchi na Google AI."}
           </p>
         </div>
 

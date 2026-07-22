@@ -10,6 +10,9 @@ datasource db {
 
 model PollutionReport {
   id                    String   @id @default(cuid())
+  // Inside your PollutionReport model, add these two lines:
+summary_sw        String?
+recommendation_sw String?
 
   // Citizen Report
   description           String

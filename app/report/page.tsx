@@ -1,129 +1,158 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import ImageUploader from "@/components/report/ImageUploader";
-import LocationCard from "@/components/report/LocationCard";
+import { useState } from "react";
 import PollutionForm from "@/components/report/PollutionForm";
+import { Button } from "@/components/ui/button";
+import { Camera, MapPin } from "lucide-react";
+import { useLanguage } from "@/components/LanguageContext";
 
 export default function ReportPage() {
-  // Image State
+  const { language } = useLanguage();
+
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(-4.086094);
+  const [longitude, setLongitude] = useState<number | null>(39.664935);
+  const [detecting, setDetecting] = useState(false);
 
-  // GPS State
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-
-  // GPS Error
-  const [locationError, setLocationError] = useState("");
-
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported.");
-      return;
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+      setPreview(URL.createObjectURL(file));
     }
+  }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
-      },
-      () => {
-        setLocationError(
-          "Location permission denied. Please enable location services."
-        );
-      }
-    );
-  }, []);
-
-  function handleImage(file: File) {
-    setImage(file);
-    setPreview(URL.createObjectURL(file));
+  function detectLocation() {
+    setDetecting(true);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLatitude(position.coords.latitude);
+          setLongitude(position.coords.longitude);
+          setDetecting(false);
+        },
+        (error) => {
+          console.error(error);
+          alert(language === "en" ? "Failed to detect location." : "Imeshindwa kupata eneo.");
+          setDetecting(false);
+        }
+      );
+    } else {
+      alert(language === "en" ? "Geolocation is not supported by your browser." : "Ufuatiliaji wa eneo hauungwa mkono na kivinjari chako.");
+      setDetecting(false);
+    }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
+    <main className="min-h-screen bg-gradient-to-b from-emerald-50/50 to-white py-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-10">
+        
+        {/* Header */}
+        <div className="text-center max-w-3xl mx-auto">
+          <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl">
+            {language === "en" ? "Report Environmental Pollution" : "Ripoti Uchafuzi wa Kimazingira"}
+          </h1>
+          <p className="mt-4 text-lg text-slate-600">
+            {language === "en"
+              ? "Upload a pollution photo, describe the incident, and let Gemma AI analyze environmental risks, predict air quality impact and recommend action."
+              : "Pakia picha ya uchafuzi, eleza tukio hilo, na uruhusu Gemma AI ichanganue hatari za kimazingira, itabiri athari za ubora wa hewa na kupendekeza hatua."}
+          </p>
+        </div>
 
-      {/* Hero */}
-
-      <section className="text-center py-14 px-6">
-
-        <h1 className="text-5xl font-extrabold">
-          Report Environmental Pollution
-        </h1>
-
-        <p className="text-gray-600 mt-5 max-w-3xl mx-auto">
-          Upload a pollution photo, describe the incident,
-          and let Gemma AI analyze environmental risks,
-          predict air quality impact and recommend action.
-        </p>
-
-      </section>
-
-      {/* Main */}
-
-      <section className="max-w-7xl mx-auto px-6 pb-20">
-
-        <div className="grid lg:grid-cols-2 gap-8">
-
-          {/* LEFT */}
-
+        <div className="grid gap-8 lg:grid-cols-2">
+          
+          {/* Left Column: Image Upload & Form */}
           <div className="space-y-6">
+            <div className="rounded-2xl border-2 border-dashed border-emerald-300 bg-white p-6 shadow-sm text-center relative overflow-hidden group hover:border-emerald-500 transition">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+              />
+              {preview ? (
+                <div className="relative h-64 w-full rounded-xl overflow-hidden">
+                  <img src={preview} alt="Upload preview" className="object-cover w-full h-full" />
+                </div>
+              ) : (
+                <div className="py-12 flex flex-col items-center">
+                  <div className="rounded-full bg-emerald-50 p-4 mb-4 text-emerald-600">
+                    <Camera size={36} />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800">
+                    {language === "en" ? "Upload Pollution Photo" : "Pakia Picha ya Uchafuzi"}
+                  </h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {language === "en" ? "Click to upload or drag & drop" : "Bora kubofya au kuburuta picha hapa"}
+                  </p>
+                </div>
+              )}
+            </div>
 
-            <ImageUploader
-              image={image}
-              preview={preview}
-              onImageSelect={handleImage}
-              error=""
-            />
-
-            <PollutionForm
-              image={image}
-              latitude={latitude}
-              longitude={longitude}
-            />
-
+            {/* Render the inner form */}
+            <PollutionForm image={image} latitude={latitude} longitude={longitude} />
           </div>
 
-          {/* RIGHT */}
-
+          {/* Right Column: GPS and Why It Matters */}
           <div className="space-y-6">
+            
+            {/* GPS Card */}
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="text-red-500" />
+                  <h3 className="font-bold text-lg text-slate-800">
+                    {language === "en" ? "GPS Location" : "Eneo la GPS"}
+                  </h3>
+                </div>
+                <Button variant="outline" size="sm" onClick={detectLocation} disabled={detecting}>
+                  {detecting 
+                    ? (language === "en" ? "Detecting..." : "Inatafuta...") 
+                    : (language === "en" ? "Refresh GPS" : "Sasisha GPS")}
+                </Button>
+              </div>
 
-            <LocationCard
-              latitude={latitude}
-              longitude={longitude}
-              error={locationError}
-            />
+              <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 p-4 rounded-xl">
+                <div>
+                  <span className="text-slate-500 block">{language === "en" ? "Latitude" : "Latitudo"}</span>
+                  <span className="font-mono font-bold text-slate-800">{latitude ?? "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">{language === "en" ? "Longitude" : "Longitudo"}</span>
+                  <span className="font-mono font-bold text-slate-800">{longitude ?? "N/A"}</span>
+                </div>
+              </div>
+            </div>
 
-            <div className="rounded-2xl bg-white border shadow-lg p-8">
-
-              <h2 className="text-2xl font-bold">
-                Why Your Report Matters
-              </h2>
-
-              <ul className="mt-6 space-y-4">
-
-                <li>🌍 Builds a real-time pollution map.</li>
-
-                <li>🤖 Gemma AI identifies pollution sources.</li>
-
-                <li>📈 Predicts air quality over the next 24 hours.</li>
-
-                <li>🚨 Alerts environmental authorities.</li>
-
-                <li>❤️ Helps keep communities healthier.</li>
-
+            {/* Why Your Report Matters Card */}
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
+              <h3 className="font-bold text-lg text-slate-800">
+                {language === "en" ? "Why Your Report Matters" : "Kwa Nini Ripoti Yako Ni Muhimu"}
+              </h3>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li className="flex items-center gap-3">
+                  <span>🌍</span> {language === "en" ? "Builds a real-time pollution map." : "Inajenga ramani ya uchafuzi ya wakati halisi."}
+                </li>
+                <li className="flex items-center gap-3">
+                  <span>🤖</span> {language === "en" ? "Gemma AI identifies pollution sources." : "Gemma AI inatambua vyanzo vya uchafuzi."}
+                </li>
+                <li className="flex items-center gap-3">
+                  <span>📈</span> {language === "en" ? "Predicts air quality over the next 24 hours." : "Inatabiri ubora wa hewa kwa saa 24 zijazo."}
+                </li>
+                <li className="flex items-center gap-3">
+                  <span>🚨</span> {language === "en" ? "Alerts environmental authorities." : "Inatahadharisha mamlaka za mazingira."}
+                </li>
+                <li className="flex items-center gap-3">
+                  <span>❤️</span> {language === "en" ? "Helps keep communities healthier." : "Inasaidia kuweka jamii salama na yenye afya."}
+                </li>
               </ul>
-
             </div>
 
           </div>
 
         </div>
-
-      </section>
-
+      </div>
     </main>
   );
 }

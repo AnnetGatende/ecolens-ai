@@ -9,6 +9,7 @@ import { Search, Calendar, ChevronDown } from "lucide-react";
 
 import MapLegend from "./MapLegend";
 import ClusterPopup from "./ClusterPopup";
+import { useLanguage } from "@/components/LanguageContext"; // Imported the hook
 
 type Report = {
   id: string;
@@ -44,6 +45,7 @@ type TimeframeOption = "ALL" | "TODAY" | "THIS_WEEK" | "THIS_MONTH";
 type SuperclusterFeature = Supercluster.ClusterFeature<CustomClusterProperties> | Supercluster.PointFeature<Hotspot>;
 
 export default function MapView() {
+  const { language } = useLanguage(); // Grab current language
   const mapRef = useRef<MapRef>(null);
 
   const [reports, setReports] = useState<Report[]>([]);
@@ -112,7 +114,8 @@ export default function MapView() {
 
     filteredReports.forEach((report) => {
       const key = report.displayLocation || `Grid-${report.latitude.toFixed(3)}-${report.longitude.toFixed(3)}`;
-      const displayName = report.displayLocation || "Unknown Location";
+      // Translated fallback location
+      const displayName = report.displayLocation || (language === "en" ? "Unknown Location" : "Eneo Lisilojulikana");
 
       if (!map.has(key)) {
         map.set(key, { latSum: 0, lonSum: 0, reports: [], displayLocation: displayName });
@@ -149,7 +152,7 @@ export default function MapView() {
         reports: hs.reports,
       } as Hotspot;
     });
-  }, [filteredReports]);
+  }, [filteredReports, language]); // Added language dependency here
 
   const supercluster = useMemo(() => {
     const sc = new Supercluster<Hotspot, CustomClusterProperties>({
@@ -217,7 +220,7 @@ export default function MapView() {
           </div>
           <input
             type="text"
-            placeholder="Search location or hazard..."
+            placeholder={language === "en" ? "Search location or hazard..." : "Tafuta eneo au hatari..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="block w-full rounded-xl border border-white/20 bg-white/90 backdrop-blur-md py-3 pl-9 pr-3 text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-xs font-medium"
@@ -234,10 +237,10 @@ export default function MapView() {
             onChange={(e) => setTimeframe(e.target.value as TimeframeOption)}
             className="block w-full rounded-xl border border-white/20 bg-white/90 backdrop-blur-md py-3 pl-8 pr-6 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-xs font-bold appearance-none cursor-pointer"
           >
-            <option value="ALL">All Time</option>
-            <option value="TODAY">Today</option>
-            <option value="THIS_WEEK">This Week</option>
-            <option value="THIS_MONTH">This Month</option>
+            <option value="ALL">{language === "en" ? "All Time" : "Wakati Wote"}</option>
+            <option value="TODAY">{language === "en" ? "Today" : "Leo"}</option>
+            <option value="THIS_WEEK">{language === "en" ? "This Week" : "Wiki Hii"}</option>
+            <option value="THIS_MONTH">{language === "en" ? "This Month" : "Mwezi Huu"}</option>
           </select>
           <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
             <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
