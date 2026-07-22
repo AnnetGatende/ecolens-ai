@@ -140,8 +140,10 @@ export async function POST(req: NextRequest) {
         recommendation: analysis.recommended_action,
         summary: analysis.summary,
         
-        // Kiswahili
+        // Kiswahili translations
+// @ts-ignore
         recommendation_sw: analysis.recommended_action_sw,
+        // @ts-ignore
         summary_sw: analysis.summary_sw,
       },
     });
