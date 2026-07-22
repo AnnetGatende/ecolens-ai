@@ -1,35 +1,387 @@
-import StatsCards from "@/components/dashboard/StatsCards";
-import AlertsPanel from "@/components/dashboard/AlertsPanel";
-import AIInsights from "@/components/dashboard/AIInsights";
-import RecentReports from "@/components/dashboard/RecentReports";
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import { 
+  AlertTriangle, Wind, Truck, Droplets, Activity, MapPin, 
+  Satellite, Radio, CheckCircle2, Clock, Loader2, RotateCcw, 
+  ChevronDown, ChevronUp, Lock, ShieldCheck, ArrowRight
+} from "lucide-react";
+
+// ... (Keep your existing types Report and HotspotGroup here) ...
+type Report = {
+  id: string;
+  pollutionType: string;
+  severity: string;
+  predictedAQI: number;
+  displayLocation?: string | null;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+  status: string;
+};
+
+type HotspotGroup = {
+  id: string;
+  location: string;
+  reports: Report[];
+  maxAQI: number;
+  dominantType: string;
+  isCompletelyDispatched: boolean; 
+};
 
 export default function DashboardPage() {
+  // --- AUTHENTICATION STATE ---
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [pinCode, setPinCode] = useState("");
+  const [authError, setAuthError] = useState(false);
+
+  // --- DASHBOARD STATE ---
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<Record<string, boolean>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    // Only fetch data if they pass the login screen
+    if (!isAuthenticated) return;
+
+    async function loadReports() {
+      try {
+        const response = await fetch("/api/map");
+        if (response.ok) {
+          const data = await response.json();
+          setReports(data);
+        }
+      } catch (error) {
+        console.error("Failed to load reports", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadReports();
+  }, [isAuthenticated]);
+
+  const hotspotGroups = useMemo(() => {
+    const map = new Map<string, HotspotGroup>();
+
+    reports.forEach((report) => {
+      const groupId = report.displayLocation || `Grid-${report.latitude.toFixed(3)}-${report.longitude.toFixed(3)}`;
+      const displayName = report.displayLocation || `Unmapped Zone (${report.latitude.toFixed(3)}, ${report.longitude.toFixed(3)})`;
+      
+      if (!map.has(groupId)) {
+        map.set(groupId, {
+          id: groupId,
+          location: displayName,
+          reports: [],
+          maxAQI: 0,
+          dominantType: report.pollutionType,
+          isCompletelyDispatched: true, 
+        });
+      }
+
+      const group = map.get(groupId)!;
+      group.reports.push(report);
+      
+      if (report.status !== "RESOLVED") {
+        group.isCompletelyDispatched = false;
+      }
+
+      if (report.predictedAQI > group.maxAQI) {
+        group.maxAQI = report.predictedAQI;
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.maxAQI - a.maxAQI);
+  }, [reports]);
+
+  const activeIncidents = reports.filter(r => r.status !== "RESOLVED").length;
+  const criticalSpikes = reports.filter(r => r.predictedAQI > 150 && r.status !== "RESOLVED").length;
+  const resourcesDeployed = reports.filter(r => r.status === "RESOLVED").length;
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
+  const handleIndividualAction = async (reportId: string, action: "dispatch" | "revoke") => {
+    setProcessing(prev => ({ ...prev, [reportId]: true }));
+    try {
+      const res = await fetch("/api/dispatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportIds: [reportId], action }), 
+      });
+      
+      if (res.ok) {
+        setReports(prevReports => 
+          prevReports.map(report => {
+            if (report.id === reportId) {
+              return { ...report, status: action === "dispatch" ? "RESOLVED" : "PENDING" };
+            }
+            return report;
+          })
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setProcessing(prev => ({ ...prev, [reportId]: false }));
+    }
+  };
+
+  // --- LOGIN HANDLER ---
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // The master PIN for the demo
+    if (pinCode === "2026") {
+      setIsAuthenticated(true);
+      setAuthError(false);
+    } else {
+      setAuthError(true);
+      setPinCode("");
+    }
+  };
+
+  // --- IF NOT AUTHENTICATED, SHOW LOGIN GATE ---
+  if (!isAuthenticated) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-900 px-6">
+        <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-800/50 p-10 backdrop-blur-xl shadow-2xl">
+          <div className="flex flex-col items-center text-center">
+            <div className="rounded-full bg-emerald-500/20 p-4 mb-6">
+              <ShieldCheck className="h-10 w-10 text-emerald-400" />
+            </div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Municipal Command Center</h1>
+            <p className="mt-2 text-sm text-slate-400">Restricted Access. Please enter the dispatch authorization PIN to manage city resources.</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="mt-8 space-y-6">
+            <div>
+              <label htmlFor="pin" className="sr-only">Authorization PIN</label>
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                  <Lock className="h-5 w-5 text-slate-500" />
+                </div>
+                <input
+                  id="pin"
+                  name="pin"
+                  type="password"
+                  required
+                  value={pinCode}
+                  onChange={(e) => setPinCode(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-700 bg-slate-900/50 py-4 pl-12 pr-4 text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-emerald-500 sm:text-lg text-center tracking-[1em]"
+                  placeholder="••••"
+                  maxLength={4}
+                />
+              </div>
+              {authError && (
+                <p className="mt-3 text-sm text-red-400 text-center animate-pulse">
+                  Invalid authorization code. Please try again.
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-4 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-500"
+            >
+              Authenticate & Access <ArrowRight size={18} />
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
+  // --- IF AUTHENTICATED, SHOW THE FULL DASHBOARD ---
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-xl font-medium text-slate-600">
+        <Loader2 className="mr-3 h-8 w-8 animate-spin text-emerald-600" />
+        Initializing Command Center Data...
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-sky-50">
+    <main className="min-h-screen bg-slate-50 pb-12">
+      {/* ... (Keep ALL of your existing Dashboard return JSX exactly as it was) ... */}
+      
+      {/* Top Banner */}
+      <div className="bg-slate-900 px-6 py-3 text-sm text-slate-300 flex flex-wrap items-center justify-center gap-6">
+        <span className="flex items-center gap-2 font-medium text-emerald-400">
+          <Activity size={16} /> EcoLens Core Active
+        </span>
+        <span className="flex items-center gap-2">
+          <Satellite size={16} /> Simulated Sentinel-2 Uplink
+        </span>
+        <span className="flex items-center gap-2">
+          <Radio size={16} /> OpenAQ Sensor Sync
+        </span>
+        <span className="flex items-center gap-2">
+          <MapPin size={16} /> Citizen Crowdsource Live
+        </span>
+      </div>
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
-
-        <div className="mb-10">
-
-          <h1 className="text-5xl font-extrabold tracking-tight">
-            EcoLens Intelligence Dashboard
-          </h1>
-
-          <p className="mt-4 max-w-3xl text-lg text-gray-600">
-            Monitor real-time pollution reports, neighbourhood hotspots,
-            predicted air quality, and AI-powered environmental insights
-            generated from citizen reports.
-          </p>
-
+      <section className="mx-auto max-w-7xl px-6 py-8">
+        
+        <div className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">
+              Municipal Dispatch Center
+            </h1>
+            <p className="mt-3 max-w-2xl text-lg text-slate-600">
+              Expand neighborhood containers to deploy targeted resources to exact incident reports.
+            </p>
+          </div>
+          
+          {/* A logout button for the admin! */}
+          <button 
+            onClick={() => setIsAuthenticated(false)}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            End Session
+          </button>
         </div>
 
-        <StatsCards />
-        <AlertsPanel />
-        <AIInsights />
-        <RecentReports />
+        {/* Refined Metrics Row */}
+        <div className="mb-10 grid gap-6 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Active Incidents</p>
+            <p className="mt-2 text-4xl font-bold text-slate-800">{activeIncidents}</p>
+          </div>
+          <div className="rounded-2xl border border-red-100 bg-red-50 p-6 shadow-sm">
+            <p className="text-sm font-semibold text-red-600 uppercase tracking-wider">24h Critical Spikes</p>
+            <p className="mt-2 text-4xl font-bold text-red-700">{criticalSpikes}</p>
+          </div>
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm">
+            <p className="text-sm font-semibold text-emerald-600 uppercase tracking-wider">Resources Deployed</p>
+            <p className="mt-2 text-4xl font-bold text-emerald-700">{resourcesDeployed}</p>
+          </div>
+        </div>
+
+        {/* Actionable Neighborhood Containers */}
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <AlertTriangle className="text-orange-500" /> 
+            Sector Incident Reports
+          </h2>
+          
+          <div className="grid gap-6 lg:grid-cols-2">
+            {hotspotGroups.map((group) => {
+              const isExpanded = expandedGroups[group.id];
+              const pendingCount = group.reports.filter(r => r.status !== "RESOLVED").length;
+              
+              return (
+                <div key={group.id} className={`flex flex-col rounded-3xl border shadow-sm transition-all ${group.isCompletelyDispatched ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200 bg-white'}`}>
+                  
+                  {/* Container Header */}
+                  <div 
+                    onClick={() => toggleGroup(group.id)}
+                    className="flex cursor-pointer items-start justify-between p-6 hover:bg-slate-50/50 rounded-t-3xl"
+                  >
+                    <div>
+                      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <MapPin size={20} className={group.isCompletelyDispatched ? "text-emerald-600" : "text-blue-600"} />
+                        {group.location}
+                      </h3>
+                      <p className="text-sm font-medium text-slate-500 mt-1">
+                        {group.reports.length} Total Reports • {pendingCount} Pending Action
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      {!group.isCompletelyDispatched && (
+                        <div className={`flex flex-col items-end rounded-xl p-2 ${group.maxAQI > 150 ? 'bg-red-50' : 'bg-yellow-50'}`}>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Max Forecast</span>
+                          <span className={`text-lg font-black ${group.maxAQI > 150 ? 'text-red-700' : 'text-yellow-700'}`}>
+                            AQI {group.maxAQI}
+                          </span>
+                        </div>
+                      )}
+                      <div className="rounded-full bg-slate-100 p-2 text-slate-500">
+                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Container Body (The Individual Reports) */}
+                  {isExpanded && (
+                    <div className="border-t border-slate-100 bg-slate-50 p-4 rounded-b-3xl">
+                      <div className="flex flex-col gap-3">
+                        {group.reports.map((report) => {
+                          const isResolved = report.status === "RESOLVED";
+                          const isProcessing = processing[report.id];
+                          const isFire = report.pollutionType.toLowerCase().includes("smoke") || report.pollutionType.toLowerCase().includes("fire");
+
+                          return (
+                            <div key={report.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                              <div>
+                                <h4 className="font-bold text-slate-800">{report.pollutionType}</h4>
+                                <div className="mt-1 flex items-center gap-3 text-xs font-medium text-slate-500">
+                                  <span className={`px-2 py-1 rounded-md ${report.predictedAQI > 150 ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
+                                    AQI {report.predictedAQI}
+                                  </span>
+                                  <span>{new Date(report.createdAt).toLocaleString()}</span>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0">
+                                {isResolved ? (
+                                  <button 
+                                    onClick={() => handleIndividualAction(report.id, "revoke")}
+                                    disabled={isProcessing}
+                                    className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-70"
+                                  >
+                                    {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+                                    {isProcessing ? "Recalling..." : "Recall Unit"}
+                                  </button>
+                                ) : (
+                                  <button 
+                                    onClick={() => handleIndividualAction(report.id, "dispatch")}
+                                    disabled={isProcessing}
+                                    className={`flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-70 ${
+                                      isFire ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
+                                    }`}
+                                  >
+                                    {isProcessing ? (
+                                      <Loader2 size={16} className="animate-spin" />
+                                    ) : isFire ? (
+                                      <Droplets size={16} /> 
+                                    ) : (
+                                      <Truck size={16} />
+                                    )}
+                                    {isProcessing ? "Deploying..." : (isFire ? "Send Water Cannon" : "Send Cleanup Crew")}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Container Footer */}
+                  {!isExpanded && group.isCompletelyDispatched && (
+                    <div className="bg-emerald-500 py-1.5 text-center text-xs font-bold uppercase tracking-wider text-white rounded-b-2xl">
+                      Sector Secured
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {hotspotGroups.length === 0 && (
+              <div className="col-span-2 rounded-3xl border border-dashed border-slate-300 p-12 text-center">
+                <Wind className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                <h3 className="text-lg font-bold text-slate-700">Airspace Clear</h3>
+                <p className="text-slate-500">No active hotspots detected by EcoLens.</p>
+              </div>
+            )}
+          </div>
+        </div>
 
       </section>
-
     </main>
   );
 }
