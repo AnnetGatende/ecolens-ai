@@ -78,8 +78,9 @@ npm install
 3. Configure Environment Variables
 Create a .env file in the root directory:
 
-DATABASE_URL="your-supabase-postgres-connection-string"
-NEXT_PUBLIC_GEMMA_API_KEY="your-gemma-api-key"
+ DATABASE_URL="your-supabase-postgres-connection-string
+ 
+ NEXT_PUBLIC_GEMMA_API_KEY="your-gemma-api-key"
 
 4. Run Database Migrations
 
