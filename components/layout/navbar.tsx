@@ -6,7 +6,9 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 
 import LanguageToggle from "@/components/LanguageToggle";
-import { useLanguage } from "@/components/LanguageContext"; // Added LanguageContext
+import { useLanguage } from "@/components/LanguageContext";
+
+
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -50,8 +52,8 @@ function NavLink({
       className={cn(
         "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
         isActive
-          ? "bg-emerald-50 text-emerald-700"
-          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
         className
       )}
     >
@@ -63,7 +65,7 @@ function NavLink({
 type ReportIncidentButtonProps = {
   className?: string;
   onNavigate?: () => void;
-  language: string; // Passed language in as a prop
+  language: string;
 };
 
 function ReportIncidentButton({
@@ -77,7 +79,7 @@ function ReportIncidentButton({
       onClick={onNavigate}
       className={cn(
         buttonVariants({ size: "default" }),
-        "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700",
+        "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600",
         className
       )}
     >
@@ -88,7 +90,7 @@ function ReportIncidentButton({
 
 type DesktopNavProps = {
   pathname: string;
-  links: { href: string; label: string }[]; // Receive dynamic links
+  links: { href: string; label: string }[];
 };
 
 function DesktopNav({ pathname, links }: DesktopNavProps) {
@@ -106,7 +108,7 @@ function DesktopNav({ pathname, links }: DesktopNavProps) {
 
 type MobileNavProps = {
   pathname: string;
-  links: { href: string; label: string }[]; // Receive dynamic links
+  links: { href: string; label: string }[];
   language: string;
 };
 
@@ -122,16 +124,16 @@ function MobileNav({ pathname, links, language }: MobileNavProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="text-slate-700 hover:bg-slate-100 hover:text-slate-900 md:hidden"
+            className="text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white md:hidden"
           />
         }
       >
         <Menu className="size-5" />
         <span className="sr-only">Open menu</span>
       </SheetTrigger>
-      <SheetContent side="right" className="border-slate-200 bg-white">
-        <SheetHeader className="border-b border-slate-100 pb-4">
-          <SheetTitle className="text-left text-lg font-semibold text-slate-900">
+      <SheetContent side="right" className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <SheetHeader className="border-b border-slate-100 pb-4 dark:border-slate-800">
+          <SheetTitle className="text-left text-lg font-semibold text-slate-900 dark:text-white">
             🌿 EcoLens AI
           </SheetTitle>
         </SheetHeader>
@@ -151,9 +153,12 @@ function MobileNav({ pathname, links, language }: MobileNavProps) {
         </nav>
         
         {/* Mobile Action Buttons */}
-        <div className="mt-auto border-t border-slate-100 p-4 flex flex-col gap-4">
+        <div className="mt-auto border-t border-slate-100 p-4 flex flex-col gap-4 dark:border-slate-800">
+          
+          
+
           <div className="flex items-center justify-between px-2">
-            <span className="text-sm font-medium text-slate-600">
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
               {language === "en" ? "Language" : "Lugha"}
             </span>
             <LanguageToggle />
@@ -172,9 +177,8 @@ function MobileNav({ pathname, links, language }: MobileNavProps) {
 
 export function Navbar() {
   const pathname = usePathname();
-  const { language } = useLanguage(); // Grab current language context
+  const { language } = useLanguage();
 
-  // Define links dynamically so they react instantly to the toggle
   const navLinks = [
     { href: "/", label: language === "en" ? "Home" : "Mwanzo" },
     { href: "/report", label: language === "en" ? "Report Pollution" : "Ripoti Uchafuzi" },
@@ -184,22 +188,24 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-slate-200/70 bg-white/80 backdrop-blur-md supports-backdrop-filter:bg-white/70">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/70 bg-white/80 backdrop-blur-md supports-backdrop-filter:bg-white/70 dark:border-slate-800/70 dark:bg-slate-900/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 transition-colors hover:text-emerald-700"
+          className="flex shrink-0 items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 transition-colors hover:text-emerald-700 dark:text-white dark:hover:text-emerald-400"
         >
           <span aria-hidden="true">🌿</span>
           <span>EcoLens AI</span>
         </Link>
 
-        {/* Desktop Nav receiving translated links */}
         <DesktopNav pathname={pathname} links={navLinks} />
 
         {/* Desktop Action Area */}
         <div className="flex items-center gap-3">
-          <div className="hidden sm:block">
+          
+          {/* Grouped Theme and Language toggles together on Desktop */}
+          <div className="hidden sm:flex items-center gap-2">
+            
             <LanguageToggle />
           </div>
           

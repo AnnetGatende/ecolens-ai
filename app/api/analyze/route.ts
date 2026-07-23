@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
     const imageUrl = uploadedImage.secure_url;
     const base64Image = buffer.toString("base64");
 
+    // The prompt is updated here with strict severity guidelines
     const prompt = `
   You are EcoLens AI, an expert bilingual environmental analyst system operating in Kenya.
   
@@ -55,6 +56,14 @@ export async function POST(req: NextRequest) {
   
   User Severity:
   ${severity || "Auto Detect"}
+  
+  When determining the "severity" field, you MUST follow these strict guidelines:
+  - EXTREME: Massive uncontrolled fires, wildfires, dense toxic chemical smoke, or immediate threats to human life/infrastructure. 
+  - HIGH: Large open garbage burning, heavy industrial smog, or localized fires that are spreading.
+  - MEDIUM: Minor localized burning, moderate dust or smog over a small street.
+  - LOW: Small contained household waste burning or minor littering with no immediate air quality threat.
+
+  If the image clearly displays a massive wildfire or a sky filled with smoke, you must output "High" or "Extreme".
   
   Return ONLY valid JSON. Provide the summary and recommended_action in BOTH English and Kiswahili.
   

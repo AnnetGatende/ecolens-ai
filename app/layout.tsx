@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { Navbar } from "@/components/layout/navbar";
 
+
 import "./globals.css";
 
 import { LanguageProvider } from "@/components/LanguageContext";
@@ -29,14 +30,17 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+    
+      lang="en" suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased transition-colors duration-300">
+      
       <LanguageProvider>
         <Navbar />
         {children}
       </LanguageProvider>
+     
       </body>
     </html>
   );
