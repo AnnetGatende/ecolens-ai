@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
     Regardless of the language used in the Description above, you MUST format your JSON output using this exact rule:
     1. Base fields ("pollution_type", "likely_source", "health_risk", "recommended_action", "summary") MUST ALWAYS BE IN ENGLISH. 
     2. Swahili fields ("recommended_action_sw", "summary_sw") MUST ALWAYS BE IN KISWAHILI.
+    3.For "pollution_type", you MUST choose exactly one of these options: ["Wildfire", "Garbage Fire", "Industrial Smog", "Vehicle Emissions", "General Pollution"]. Do not add any other words.
     
     Return ONLY valid JSON:
     {
@@ -144,7 +145,10 @@ export async function POST(req: NextRequest) {
         userCategory: category || null,
         userSeverity: severity || null,
         pollutionType: analysis.pollution_type || "General Pollution",
-        confidence: Math.round(Number(analysis.confidence || 0.8) * 100),
+        // If Gemma returns a decimal (0.98), multiply by 100. If it returns a whole number (98), just use it.
+        confidence: Number(analysis.confidence) > 1 
+          ? Math.min(Math.round(Number(analysis.confidence)), 100) 
+          : Math.round(Number(analysis.confidence || 0.8) * 100),
         severity: analysis.severity || "Moderate",
         likelySource: analysis.likely_source || "Unknown Source",
         predictedAQI: Number(analysis.aqi_prediction || 50),
