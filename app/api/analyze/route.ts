@@ -40,49 +40,52 @@ export async function POST(req: NextRequest) {
 
     // The prompt is updated here with strict severity guidelines
     const prompt = `
-  You are EcoLens AI, an expert bilingual environmental analyst system operating in Kenya.
+    You are EcoLens AI, an expert bilingual environmental analyst system operating in Kenya.
+    
+    Analyze this pollution report based on the provided image and data.
+    
+    Description:
+    ${description}
+    
+    Location:
+    Latitude: ${latitude}
+    Longitude: ${longitude}
+    
+    User Category:
+    ${category || "Auto Detect"}
+    
+    User Severity:
+    ${severity || "Auto Detect"}
+    
+    When determining the "severity" field, you MUST follow these strict guidelines:
+    - EXTREME: Massive uncontrolled fires, wildfires, dense toxic chemical smoke, or immediate threats to human life/infrastructure. 
+    - HIGH: Large open garbage burning, heavy industrial smog, or localized fires that are spreading.
+    - MEDIUM: Minor localized burning, moderate dust or smog over a small street.
+    - LOW: Small contained household waste burning or minor littering with no immediate air quality threat.
   
-  Analyze this pollution report based on the provided image and data.
-  
-  Description:
-  ${description}
-  
-  Location:
-  Latitude: ${latitude}
-  Longitude: ${longitude}
-  
-  User Category:
-  ${category || "Auto Detect"}
-  
-  User Severity:
-  ${severity || "Auto Detect"}
-  
-  When determining the "severity" field, you MUST follow these strict guidelines:
-  - EXTREME: Massive uncontrolled fires, wildfires, dense toxic chemical smoke, or immediate threats to human life/infrastructure. 
-  - HIGH: Large open garbage burning, heavy industrial smog, or localized fires that are spreading.
-  - MEDIUM: Minor localized burning, moderate dust or smog over a small street.
-  - LOW: Small contained household waste burning or minor littering with no immediate air quality threat.
-
-  If the image clearly displays a massive wildfire or a sky filled with smoke, you must output "High" or "Extreme".
-  
-  Return ONLY valid JSON. Provide the summary and recommended_action in BOTH English and Kiswahili.
-  
-  {
-    "pollution_type":"",
-    "confidence":0,
-    "severity":"",
-    "likely_source":"",
-    "aqi_prediction":0,
-    "health_risk":"",
-    "recommended_action":"",
-    "summary":"",
-    "recommended_action_sw":"",
-    "summary_sw":""
-  }
-  
-  Do not use markdown.
-  Return only JSON.
-  `;
+    If the image clearly displays a massive wildfire or a sky filled with smoke, you must output "High" or "Extreme".
+    
+    LANGUAGE INSTRUCTION:
+    If the user description is in Kiswahili or if operating in Kiswahili mode, provide "pollution_type", "likely_source", "health_risk", "recommended_action", and "summary" directly in fluent Kiswahili.
+    
+    Return ONLY valid JSON:
+    
+    {
+      "pollution_type":"",
+      "confidence":0,
+      "severity":"",
+      "likely_source":"",
+      "aqi_prediction":0,
+      "health_risk":"",
+      "recommended_action":"",
+      "summary":"",
+      "recommended_action_sw":"",
+      "summary_sw":""
+    }
+    
+    Do not use markdown block ticks.
+    Return only JSON.
+    `;
 
     const response = await ai.models.generateContent({
       model: "gemma-4-26b-a4b-it",
