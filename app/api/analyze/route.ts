@@ -65,11 +65,12 @@ export async function POST(req: NextRequest) {
   
     If the image clearly displays a massive wildfire or a sky filled with smoke, you must output "High" or "Extreme".
     
-    LANGUAGE INSTRUCTION:
-    If the user description is in Kiswahili or if operating in Kiswahili mode, provide "pollution_type", "likely_source", "health_risk", "recommended_action", and "summary" directly in fluent Kiswahili.
+    CRITICAL BILINGUAL INSTRUCTIONS:
+    Regardless of the language used in the Description above, you MUST format your JSON output using this exact rule:
+    1. Base fields ("pollution_type", "likely_source", "health_risk", "recommended_action", "summary") MUST ALWAYS BE IN ENGLISH. 
+    2. Swahili fields ("recommended_action_sw", "summary_sw") MUST ALWAYS BE IN KISWAHILI.
     
     Return ONLY valid JSON:
-    
     {
       "pollution_type":"",
       "confidence":0,
