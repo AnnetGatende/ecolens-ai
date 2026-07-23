@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/components/LanguageContext";
 
 // Prevents Vercel from caching the page so the stats are always live!
@@ -93,8 +93,8 @@ export default function AnalysisDashboard() {
       {/* Image Cards Grid */}
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {reports.map((report) => (
-          <Link key={report.id} href={`/analysis/${report.id}`} className="group block overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg">
-            <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100">
+          <Link key={report.id} href={`/analysis/${report.id}`} className="group flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg">
+            <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100 shrink-0">
               {report.imageUrl ? (
                 <img 
                   src={report.imageUrl} 
@@ -106,7 +106,7 @@ export default function AnalysisDashboard() {
               )}
             </div>
             
-            <div className="p-5">
+            <div className="flex flex-col flex-grow p-5">
               <div className="flex justify-between items-center mb-3 text-xs font-bold uppercase tracking-wider">
                 <span className={report.severity.toLowerCase() === "high" || report.severity.toLowerCase() === "juu" ? "text-red-500" : "text-emerald-500"}>
                   {language === "en" 
@@ -119,7 +119,15 @@ export default function AnalysisDashboard() {
                     : (language === "en" ? "PENDING" : "INASUBIRI")}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-slate-800 truncate">{report.pollutionType}</h3>
+              <h3 className="text-lg font-bold text-slate-800 truncate mb-4">{report.pollutionType}</h3>
+              
+              {/* New View Report Button Section */}
+              <div className="mt-auto pt-4 border-t border-slate-100">
+                <span className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-300 group-hover:bg-emerald-600 group-hover:text-white">
+                  {language === "en" ? "View Report" : "Tazama Ripoti"}
+                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                </span>
+              </div>
             </div>
           </Link>
         ))}
