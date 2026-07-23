@@ -84,7 +84,7 @@ export default function AnalysisPage() {
   if (loading) {
     return (
       <div className="p-20 text-center text-xl font-medium text-gray-600">
-        Loading AI Analysis...
+        {language === "en" ? "Loading AI Analysis..." : "Inapakia Uchanganuzi wa AI..."}
       </div>
     );
   }
