@@ -3,7 +3,11 @@
 import { BrainCircuit } from "lucide-react";
 import { useLanguage } from "@/components/LanguageContext";
 
-export default function AnalysisSummary() {
+type Props = {
+  summaryText: string;
+};
+
+export default function AnalysisSummary({ summaryText }: Props) {
   const { language } = useLanguage();
 
   return (
@@ -15,10 +19,8 @@ export default function AnalysisSummary() {
         </h2>
       </div>
 
-      <p className="text-lg">
-        {language === "en"
-          ? "Open waste burning detected with very high confidence. Immediate intervention is recommended due to elevated health risks for nearby residents."
-          : "Uchomaji wa taka wazi umegunduliwa kwa uhakika wa hali ya juu. Uingiliaji kati wa haraka unapendekezwa kutokana na kuongezeka kwa hatari za kiafya kwa wakazi wa karibu."}
+      <p className="text-lg leading-relaxed">
+        {summaryText || (language === "en" ? "No summary provided." : "Hakuna maelezo yaliyotolewa.")}
       </p>
     </div>
   );

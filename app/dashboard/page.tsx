@@ -52,7 +52,9 @@ export default function DashboardPage() {
 
     async function loadReports() {
       try {
-        const response = await fetch("/api/map");
+        // ADDED: { cache: "no-store" } to force fresh data every single time
+        const response = await fetch("/api/map", { cache: "no-store" }); 
+        
         if (response.ok) {
           const data = await response.json();
           setReports(data);

@@ -9,6 +9,8 @@ import { useReactToPrint } from "react-to-print";
 import UploadedReport from "@/components/analysis/UploadedReport";
 import AIResultCard from "@/components/report/AIResultCard";
 
+export const dynamic = "force-dynamic";
+
 type Report = {
   id: string;
   imageUrl: string | null;
