@@ -1,157 +1,128 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
-import { useReactToPrint } from "react-to-print";
+import { Loader2 } from "lucide-react";
+import { useLanguage } from "@/components/LanguageContext";
 
-import UploadedReport from "@/components/analysis/UploadedReport";
-import AIResultCard from "@/components/report/AIResultCard";
-import { useLanguage } from "@/components/LanguageContext"; // Added Language Hook
-
+// Prevents Vercel from caching the page so the stats are always live!
 export const dynamic = "force-dynamic";
 
 type Report = {
   id: string;
   imageUrl: string | null;
-  description: string;
-  latitude: number;
-  longitude: number;
-  
-  displayLocation?: string | null;
-  area?: string | null;
-  ward?: string | null;
-  subCounty?: string | null;
-  county?: string | null;
-
-  status: string;
-  createdAt: string;
   pollutionType: string;
-  confidence: number;
   severity: string;
+  status: string;
   predictedAQI: number;
-  likelySource: string;
-  healthRisk: string;
-  recommendation: string;
-  summary: string;
-  
-  // Added Swahili fields to the type
-  recommendation_sw?: string;
-  summary_sw?: string;
 };
 
-export default function AnalysisPage() {
-  const params = useParams();
-  const Id = params.Id as string;
-  const { language } = useLanguage(); // Grab the active language
-
-  const [report, setReport] = useState<Report | null>(null);
+export default function AnalysisDashboard() {
+  const { language } = useLanguage();
+  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    async function loadReport() {
-      if (!Id) return; 
-
+    async function fetchReports() {
       try {
-        const response = await fetch(`/api/reports/${Id}`);
-
-        if (!response.ok) {
-          setLoading(false);
-          return;
+        // cache: "no-store" ensures we get fresh data from Prisma every time
+        const res = await fetch("/api/reports", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setReports(data);
         }
-
-        const data = await response.json();
-        setReport(data);
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
       }
     }
-
-    if (Id) {
-      loadReport();
-    }
-  }, [Id]);
-
-  const handleDownloadPdf = useReactToPrint({
-    contentRef: contentRef,
-    documentTitle: `EcoLens_Report_${report?.id.substring(0, 6) || 'Export'}`,
-  });
+    fetchReports();
+  }, []);
 
   if (loading) {
     return (
-      <div className="p-20 text-center text-xl font-medium text-gray-600">
-        Loading AI Analysis...
+      <div className="flex h-64 items-center justify-center text-emerald-600">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2 font-medium">
+          {language === "en" ? "Loading Analysis Data..." : "Inapakia Data ya Uchanganuzi..."}
+        </span>
       </div>
     );
   }
 
-  if (!report) {
-    return (
-      <div className="flex flex-col items-center justify-center p-20 text-center space-y-4">
-        <h2 className="text-2xl font-bold text-gray-800">Report not found.</h2>
-        <Link
-          href="/analysis"
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-white transition hover:bg-emerald-700"
-        >
-          <ArrowLeft size={18} />
-          Go Back
-        </Link>
-      </div>
-    );
-  }
-
-  // Determine which text to show based on the toggle
-  const displayRecommendation = language === "en" 
-    ? report.recommendation 
-    : (report.recommendation_sw || report.recommendation); // Fallback to English if Swahili is missing
-
-  const displaySummary = language === "en" 
-    ? report.summary 
-    : (report.summary_sw || report.summary);
+  // Calculate stats dynamically based on live database data
+  const total = reports.length;
+  const pending = reports.filter(r => r.status !== "RESOLVED").length;
+  const resolved = reports.filter(r => r.status === "RESOLVED").length;
+  const critical = reports.filter(r => r.predictedAQI > 150 || r.severity.toLowerCase() === "high").length;
 
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-6 py-12">
+    <main className="mx-auto max-w-7xl px-6 py-12 space-y-12">
       
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <Link
-          href="/analysis"
-          className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-100"
-        >
-          <ArrowLeft size={18} />
-          {language === "en" ? "Back to Analysis Center" : "Rudi kwenye Kituo cha Uchanganuzi"}
-        </Link>
-
-        <button
-          onClick={() => handleDownloadPdf()}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-        >
-          <Download size={18} />
-          {language === "en" ? "Download Official Report" : "Pakua Ripoti Rasmi"}
-        </button>
+      {/* 4 Stat Cards */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">{language === "en" ? "Total Reports" : "Jumla ya Ripoti"}</p>
+          <p className="mt-2 text-4xl font-bold text-slate-800">{total}</p>
+        </div>
+        <div className="rounded-2xl border bg-yellow-50 border-yellow-100 p-6 shadow-sm">
+          <p className="text-sm font-medium text-yellow-700">{language === "en" ? "Pending Reports" : "Ripoti Zinazosubiri"}</p>
+          <p className="mt-2 text-4xl font-bold text-yellow-800">{pending}</p>
+        </div>
+        <div className="rounded-2xl border bg-emerald-50 border-emerald-100 p-6 shadow-sm">
+          <p className="text-sm font-medium text-emerald-700">{language === "en" ? "Resolved Reports" : "Ripoti Zilizotatuliwa"}</p>
+          <p className="mt-2 text-4xl font-bold text-emerald-800">{resolved}</p>
+        </div>
+        <div className="rounded-2xl border bg-red-50 border-red-100 p-6 shadow-sm">
+          <p className="text-sm font-medium text-red-700">{language === "en" ? "Critical Reports" : "Ripoti Hatari"}</p>
+          <p className="mt-2 text-4xl font-bold text-red-800">{critical}</p>
+        </div>
       </div>
 
-      <div 
-        ref={contentRef} 
-        className="space-y-8 pb-4 print:p-8 print:bg-white"
-      >
-        <UploadedReport report={report} />
+      {/* Grid Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-slate-800">
+          {language === "en" ? "Incident Reports" : "Ripoti za Matukio"}
+        </h2>
+        <span className="rounded-full bg-emerald-100 px-4 py-1 text-sm font-bold text-emerald-800">
+          {language === "en" ? `Total ${total}` : `Jumla ${total}`}
+        </span>
+      </div>
 
-        <AIResultCard
-          result={{
-            pollution_type: report.pollutionType,
-            confidence: report.confidence,
-            severity: report.severity,
-            aqi_prediction: report.predictedAQI,
-            likely_source: report.likelySource,
-            health_risk: report.healthRisk,
-            recommended_action: displayRecommendation, // Passes the correct translated text
-            summary: displaySummary,                   // Passes the correct translated text
-          }}
-        />
+      {/* Image Cards Grid */}
+      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {reports.map((report) => (
+          <Link key={report.id} href={`/analysis/${report.id}`} className="group block overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg">
+            <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100">
+              {report.imageUrl ? (
+                <img 
+                  src={report.imageUrl} 
+                  alt={report.pollutionType} 
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105" 
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-slate-400">No Image</div>
+              )}
+            </div>
+            
+            <div className="p-5">
+              <div className="flex justify-between items-center mb-3 text-xs font-bold uppercase tracking-wider">
+                <span className={report.severity.toLowerCase() === "high" || report.severity.toLowerCase() === "juu" ? "text-red-500" : "text-emerald-500"}>
+                  {language === "en" 
+                    ? `Severity: ${report.severity}` 
+                    : `Ukali: ${report.severity.toLowerCase() === "high" ? "Juu" : report.severity.toLowerCase() === "medium" ? "Kati" : "Chini"}`}
+                </span>
+                <span className={report.status === "RESOLVED" ? "text-emerald-500 bg-emerald-50 px-2 py-1 rounded" : "text-yellow-600 bg-yellow-50 px-2 py-1 rounded"}>
+                  {report.status === "RESOLVED" 
+                    ? (language === "en" ? "RESOLVED" : "IMETATULIWA") 
+                    : (language === "en" ? "PENDING" : "INASUBIRI")}
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 truncate">{report.pollutionType}</h3>
+            </div>
+          </Link>
+        ))}
       </div>
       
     </main>

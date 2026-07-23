@@ -8,6 +8,7 @@ import { useReactToPrint } from "react-to-print";
 
 import UploadedReport from "@/components/analysis/UploadedReport";
 import AIResultCard from "@/components/report/AIResultCard";
+import { useLanguage } from "@/components/LanguageContext"; // Added Language Hook
 
 export const dynamic = "force-dynamic";
 
@@ -34,16 +35,19 @@ type Report = {
   healthRisk: string;
   recommendation: string;
   summary: string;
+  
+  // Added Swahili fields to the type
+  recommendation_sw?: string;
+  summary_sw?: string;
 };
 
 export default function AnalysisPage() {
   const params = useParams();
   const Id = params.Id as string;
+  const { language } = useLanguage(); // Grab the active language
 
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Create a reference to the container we want to print
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,7 +76,6 @@ export default function AnalysisPage() {
     }
   }, [Id]);
 
-  // react-to-print hook bypasses CSS parsing errors by using the native browser engine
   const handleDownloadPdf = useReactToPrint({
     contentRef: contentRef,
     documentTitle: `EcoLens_Report_${report?.id.substring(0, 6) || 'Export'}`,
@@ -101,17 +104,25 @@ export default function AnalysisPage() {
     );
   }
 
+  // Determine which text to show based on the toggle
+  const displayRecommendation = language === "en" 
+    ? report.recommendation 
+    : (report.recommendation_sw || report.recommendation); // Fallback to English if Swahili is missing
+
+  const displaySummary = language === "en" 
+    ? report.summary 
+    : (report.summary_sw || report.summary);
+
   return (
     <main className="mx-auto max-w-7xl space-y-8 px-6 py-12">
       
-      {/* Top Navigation & Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Link
           href="/analysis"
           className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-100"
         >
           <ArrowLeft size={18} />
-          Back to Analysis Center
+          {language === "en" ? "Back to Analysis Center" : "Rudi kwenye Kituo cha Uchanganuzi"}
         </Link>
 
         <button
@@ -119,11 +130,10 @@ export default function AnalysisPage() {
           className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700"
         >
           <Download size={18} />
-          Download Official Report
+          {language === "en" ? "Download Official Report" : "Pakua Ripoti Rasmi"}
         </button>
       </div>
 
-      {/* The container that gets converted to PDF */}
       <div 
         ref={contentRef} 
         className="space-y-8 pb-4 print:p-8 print:bg-white"
@@ -136,10 +146,10 @@ export default function AnalysisPage() {
             confidence: report.confidence,
             severity: report.severity,
             aqi_prediction: report.predictedAQI,
-            recommended_action: report.recommendation,
             likely_source: report.likelySource,
             health_risk: report.healthRisk,
-            summary: report.summary,
+            recommended_action: displayRecommendation, // Passes the correct translated text
+            summary: displaySummary,                   // Passes the correct translated text
           }}
         />
       </div>
