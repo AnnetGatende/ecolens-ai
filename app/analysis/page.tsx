@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Loader2, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/components/LanguageContext";
 
-// Prevents Vercel from caching the page so the stats are always live!
 export const dynamic = "force-dynamic";
 
 type Report = {
@@ -25,7 +24,6 @@ export default function AnalysisDashboard() {
   useEffect(() => {
     async function fetchReports() {
       try {
-        // cache: "no-store" ensures we get fresh data from Prisma every time
         const res = await fetch("/api/reports", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
@@ -40,6 +38,23 @@ export default function AnalysisDashboard() {
     fetchReports();
   }, []);
 
+  // --- FRONTEND TRANSLATION DICTIONARY ---
+  // This intercepts the English database category and translates it for the UI
+  const getTranslatedType = (type: string) => {
+    if (language === "en") return type; // Keep English if toggle is EN
+    
+    const lowerType = type.toLowerCase();
+    
+    if (lowerType.includes("wildfire smoke") || lowerType.includes("fire")) return "Moshi wa Moto wa Mwitu";
+    if (lowerType.includes("air pollution")) return "Uchafuzi wa Hewa";
+    if (lowerType.includes("plastic") || lowerType.includes("solid waste")) return "Taka za Plastiki na Ngumu";
+    if (lowerType.includes("water")) return "Uchafuzi wa Maji";
+    if (lowerType.includes("noise")) return "Uchafuzi wa Kelele";
+    if (lowerType.includes("chemical") || lowerType.includes("toxic")) return "Taka za Kemikali";
+    
+    return type; // Fallback to original if it doesn't match the dictionary
+  };
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center text-emerald-600">
@@ -51,7 +66,6 @@ export default function AnalysisDashboard() {
     );
   }
 
-  // Calculate stats dynamically based on live database data
   const total = reports.length;
   const pending = reports.filter(r => r.status !== "RESOLVED").length;
   const resolved = reports.filter(r => r.status === "RESOLVED").length;
@@ -119,9 +133,12 @@ export default function AnalysisDashboard() {
                     : (language === "en" ? "PENDING" : "INASUBIRI")}
                 </span>
               </div>
-              <h3 className="text-lg font-bold text-slate-800 truncate mb-4">{report.pollutionType}</h3>
               
-              {/* New View Report Button Section */}
+              {/* Using the new translation function here! */}
+              <h3 className="text-lg font-bold text-slate-800 truncate mb-4">
+                {getTranslatedType(report.pollutionType)}
+              </h3>
+              
               <div className="mt-auto pt-4 border-t border-slate-100">
                 <span className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition duration-300 group-hover:bg-emerald-600 group-hover:text-white">
                   {language === "en" ? "View Report" : "Tazama Ripoti"}
