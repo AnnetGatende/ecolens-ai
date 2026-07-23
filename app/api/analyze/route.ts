@@ -40,54 +40,54 @@ export async function POST(req: NextRequest) {
 
     // The prompt is updated here with strict severity guidelines
     const prompt = `
-    You are EcoLens AI, an expert bilingual environmental analyst system operating in Kenya.
-    
-    Analyze this pollution report based on the provided image and data.
-    
-    Description:
-    ${description}
-    
-    Location:
-    Latitude: ${latitude}
-    Longitude: ${longitude}
-    
-    User Category:
-    ${category || "Auto Detect"}
-    
-    User Severity:
-    ${severity || "Auto Detect"}
-    
-    When determining the "severity" field, you MUST follow these strict guidelines:
-    - EXTREME: Massive uncontrolled fires, wildfires, dense toxic chemical smoke, or immediate threats to human life/infrastructure. 
-    - HIGH: Large open garbage burning, heavy industrial smog, or localized fires that are spreading.
-    - MEDIUM: Minor localized burning, moderate dust or smog over a small street.
-    - LOW: Small contained household waste burning or minor littering with no immediate air quality threat.
+  You are EcoLens AI, an expert bilingual environmental analyst system operating in Kenya.
   
-    If the image clearly displays a massive wildfire or a sky filled with smoke, you must output "High" or "Extreme".
-    
-    CRITICAL BILINGUAL INSTRUCTIONS:
-    Regardless of the language used in the Description above, you MUST format your JSON output using this exact rule:
-    1. Base fields ("pollution_type", "likely_source", "health_risk", "recommended_action", "summary") MUST ALWAYS BE IN ENGLISH. 
-    2. Swahili fields ("recommended_action_sw", "summary_sw") MUST ALWAYS BE IN KISWAHILI.
-    3.For "pollution_type", you MUST choose exactly one of these options: ["Wildfire", "Garbage Fire", "Industrial Smog", "Vehicle Emissions", "General Pollution"]. Do not add any other words.
-    
-    Return ONLY valid JSON:
-    {
-      "pollution_type":"",
-      "confidence":0,
-      "severity":"",
-      "likely_source":"",
-      "aqi_prediction":0,
-      "health_risk":"",
-      "recommended_action":"",
-      "summary":"",
-      "recommended_action_sw":"",
-      "summary_sw":""
-    }
-    
-    Do not use markdown block ticks.
-    Return only JSON.
-    `;
+  Analyze this pollution report based on the provided image and data.
+  
+  Description:
+  ${description}
+  
+  Location:
+  Latitude: ${latitude}
+  Longitude: ${longitude}
+  
+  User Category:
+  ${category || "Auto Detect"}
+  
+  User Severity:
+  ${severity || "Auto Detect"}
+  
+  CRITICAL SYSTEM CONSTRAINTS (MUST MATCH DATABASE EXACTLY):
+  1. For "severity", you MUST choose exactly one of these three options: ["Low", "Medium", "High"]. Do NOT output "Extreme".
+     - HIGH: Massive uncontrolled fires, wildfires, dense toxic chemical smoke, or immediate threats.
+     - MEDIUM: Minor localized burning, moderate dust or smog over a small street.
+     - LOW: Small contained household waste burning or minor littering.
+     If the image shows a massive wildfire, you MUST output "High".
+
+  2. For "pollution_type", you MUST choose exactly one of these options: ["Smoke", "Dust", "Garbage Burning", "Industrial Emissions", "Water Pollution", "Chemical Spill"].
+     If it is a wildfire or massive fire, classify it as "Smoke". Do NOT make up new categories like "Wildfire".
+  
+  BILINGUAL INSTRUCTIONS:
+  1. Base fields ("pollution_type", "likely_source", "health_risk", "recommended_action", "summary") MUST ALWAYS BE IN ENGLISH. 
+  2. Swahili fields ("recommended_action_sw", "summary_sw") MUST ALWAYS BE IN KISWAHILI.
+  
+  Return ONLY valid JSON:
+  {
+    "pollution_type":"",
+    "confidence":0,
+    "severity":"",
+    "likely_source":"",
+    "aqi_prediction":0,
+    "health_risk":"",
+    "recommended_action":"",
+    "summary":"",
+    "recommended_action_sw":"",
+    "summary_sw":""
+  }
+  
+  Do not use markdown block ticks.
+  Return only JSON.
+  `;
 
     const response = await ai.models.generateContent({
       model: "gemma-4-26b-a4b-it",
