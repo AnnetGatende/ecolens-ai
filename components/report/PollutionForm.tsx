@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguage } from "@/components/LanguageContext"; // 1. Imported the language hook
+import { useLanguage } from "@/components/LanguageContext"; 
 
 type Props = {
   image: File | null;
@@ -19,14 +19,13 @@ export default function PollutionForm({
   longitude,
 }: Props) {
   const router = useRouter();
-  const { language } = useLanguage(); // 2. Grabbed the current language
+  const { language } = useLanguage(); 
 
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [severity, setSeverity] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Changed errors to simple booleans/keys so they instantly translate if the user flips the toggle while an error is showing
   const [errors, setErrors] = useState({
     image: false,
     description: false,
@@ -65,6 +64,18 @@ export default function PollutionForm({
     if (!validate()) return;
     if (!image) return;
 
+    // --- NEW: Vercel 4MB File Size Limit Check ---
+    const fileSizeInMB = image.size / (1024 * 1024);
+    if (fileSizeInMB > 4) {
+      alert(
+        language === "en" 
+          ? "Sorry, the image is too large! Please upload a photo under 4MB." 
+          : "Samahani, picha ni kubwa mno! Tafadhali pakia picha chini ya 4MB."
+      );
+      return; // Stops the execution right here so Vercel doesn't crash
+    }
+    // ---------------------------------------------
+
     setLoading(true);
 
     try {
@@ -102,7 +113,6 @@ export default function PollutionForm({
     }
   }
 
-  // Helper arrays for our dropdowns and buttons to keep JSX clean
   const categories = [
     { value: "Smoke", en: "Smoke", sw: "Moshi" },
     { value: "Dust", en: "Dust", sw: "Vumbi" },
@@ -121,7 +131,6 @@ export default function PollutionForm({
   return (
     <div className="rounded-2xl border bg-white shadow-lg p-6 space-y-6">
       
-      {/* Header Section */}
       <div>
         <h2 className="text-2xl font-bold">
           {language === "en" ? "Pollution Details" : "Maelezo ya Uchafuzi"}
@@ -133,7 +142,6 @@ export default function PollutionForm({
         </p>
       </div>
 
-      {/* Error Messages */}
       {errors.image && (
         <p className="text-red-600 font-medium">
           📷 {language === "en" ? "Please upload a pollution photo." : "Tafadhali pakia picha ya uchafuzi."}
@@ -146,7 +154,6 @@ export default function PollutionForm({
         </p>
       )}
 
-      {/* Description Input */}
       <div>
         <label className="font-semibold">
           {language === "en" ? "Description" : "Maelezo"}
@@ -174,7 +181,6 @@ export default function PollutionForm({
         </div>
       </div>
 
-      {/* Category Selection */}
       <div>
         <label className="font-semibold">
           {language === "en" ? "Pollution Category" : "Aina ya Uchafuzi"}
@@ -195,7 +201,6 @@ export default function PollutionForm({
         </select>
       </div>
 
-      {/* Severity Buttons */}
       <div>
         <label className="font-semibold">
           {language === "en" ? "Estimated Severity (Optional)" : "Kadirio la Ukali (Sio Lazima)"}
@@ -218,7 +223,6 @@ export default function PollutionForm({
         </div>
       </div>
 
-      {/* Submit Button */}
       <Button
         onClick={analyze}
         disabled={loading}
