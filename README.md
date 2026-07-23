@@ -105,9 +105,9 @@ Annet Gatende
 
  Full-Stack Developer | Mombasa, Kenya
 
- GitHub: @AnnetGatende
+ GitHub:[@AnnetGatende](https://github.com/AnnetGatende)
 
- LinkedIn: Annet Gatende
+ LinkedIn:[Annet Gatende](https://www.linkedin.com/in/annetgatende/)
 
 Built with ❤️ for the Build with Gemma: GDG Pwani Hackathon — July 31, 2026
 
