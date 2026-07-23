@@ -78,35 +78,36 @@ npm install
 3. Configure Environment Variables
 Create a .env file in the root directory:
 
- DATABASE_URL="your-supabase-postgres-connection-string
+    DATABASE_URL="your-supabase-postgres-connection-string
  
- NEXT_PUBLIC_GEMMA_API_KEY="your-gemma-api-key"
+    NEXT_PUBLIC_GEMMA_API_KEY="your-gemma-api-key"
 
 4. Run Database Migrations
 
-npx prisma db push
+    npx prisma db push
 
 5. Start the Development Server
 
-npm run dev
-Open http://localhost:3000 in your browser.
+    npm run dev
+    Open http://localhost:3000 in your browser.
 
 
 🎯 Usage Guide
-Citizen View: Navigate to the home page to see live network intelligence. Go to Report Pollution to upload a photo; GPS coordinates are auto-detected.
 
-Municipal Dispatch Center: Access /dashboard and enter the demo PIN: 2026. Review incoming citizen reports, expand sectors to see Gemma's AQI forecasts, and deploy resources.
+   Citizen View: Navigate to the home page to see live network intelligence. Go to Report Pollution to upload a photo; GPS coordinates       are auto-detected.
 
-AI Analysis Center: Visit /analysis to see all reports with Gemma's full environmental assessments, localized into Swahili or English.
+   Municipal Dispatch Center: Access /dashboard and enter the demo PIN: 2026. Review incoming citizen reports, expand sectors to see         Gemma's AQI forecasts, and deploy resources.
+
+  AI Analysis Center: Visit /analysis to see all reports with Gemma's full environmental assessments, localized into Swahili or English.
 
 👩‍💻 Author
 Annet Gatende
 
  Full-Stack Developer | Mombasa, Kenya
 
-GitHub: @AnnetGatende
+ GitHub: @AnnetGatende
 
-LinkedIn: Annet Gatende
+ LinkedIn: Annet Gatende
 
 Built with ❤️ for the Build with Gemma: GDG Pwani Hackathon — July 31, 2026
 
