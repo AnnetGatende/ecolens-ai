@@ -9,45 +9,47 @@ datasource db {
 }
 
 model PollutionReport {
-  id                    String   @id @default(cuid())
-  // Inside your PollutionReport model, add these two lines:
-summary_sw        String?
-recommendation_sw String?
+  id                String   @id @default(cuid())
 
   // Citizen Report
-  description           String
-  imageUrl              String?
+  description       String
+  imageUrl          String?
 
-  latitude              Float
-  longitude             Float
+  latitude          Float
+  longitude         Float
 
   // Human-Readable Location
-  county                String?
-  subCounty             String?
-  ward                  String?
-  area                  String?
-  displayLocation       String?
+  county            String?
+  subCounty         String?
+  ward              String?
+  area              String?
+  displayLocation   String?
 
-  userCategory          String?
-  userSeverity          String?
+  userCategory      String?
+  userSeverity      String?
 
-  // Gemma AI Analysis
-  pollutionType         String
-  confidence            Float
-  severity              String
-  likelySource          String
-  predictedAQI          Int
-  healthRisk            String
-  recommendation        String
-  summary               String
+  // Gemma AI Analysis (Bilingual)
+  pollutionType     String
+  pollutionType_sw  String?
+  confidence        Float
+  severity          String
+  likelySource      String
+  likelySource_sw   String?
+  predictedAQI      Int
+  healthRisk        String
+  healthRisk_sw     String?
+  recommendation    String
+  recommendation_sw String?
+  summary           String
+  summary_sw        String?
 
   // Workflow
-  status                ReportStatus @default(PENDING)
-  municipalAlertSent    Boolean @default(false)
-  hotspotDetected       Boolean @default(false)
+  status             ReportStatus @default(PENDING)
+  municipalAlertSent Boolean @default(false)
+  hotspotDetected    Boolean @default(false)
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 enum ReportStatus {

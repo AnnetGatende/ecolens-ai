@@ -8,7 +8,7 @@ import { useReactToPrint } from "react-to-print";
 
 import UploadedReport from "@/components/analysis/UploadedReport";
 import AIResultCard from "@/components/report/AIResultCard";
-import { useLanguage } from "@/components/LanguageContext"; // Added Language Hook
+import { useLanguage } from "@/components/LanguageContext";
 
 export const dynamic = "force-dynamic";
 
@@ -27,16 +27,21 @@ type Report = {
 
   status: string;
   createdAt: string;
-  pollutionType: string;
   confidence: number;
   severity: string;
   predictedAQI: number;
+  
+  // English Fields
+  pollutionType: string;
   likelySource: string;
   healthRisk: string;
   recommendation: string;
   summary: string;
   
-  // Added Swahili fields to the type
+  // Swahili Fields
+  pollutionType_sw?: string;
+  likelySource_sw?: string;
+  healthRisk_sw?: string;
   recommendation_sw?: string;
   summary_sw?: string;
 };
@@ -44,7 +49,7 @@ type Report = {
 export default function AnalysisPage() {
   const params = useParams();
   const Id = params.Id as string;
-  const { language } = useLanguage(); // Grab the active language
+  const { language } = useLanguage(); 
 
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,12 +61,10 @@ export default function AnalysisPage() {
 
       try {
         const response = await fetch(`/api/reports/${Id}`);
-
         if (!response.ok) {
           setLoading(false);
           return;
         }
-
         const data = await response.json();
         setReport(data);
       } catch (error) {
@@ -104,14 +107,23 @@ export default function AnalysisPage() {
     );
   }
 
-  // Determine which text to show based on the toggle
-  const displayRecommendation = language === "en" 
-    ? report.recommendation 
-    : (report.recommendation_sw || report.recommendation); // Fallback to English if Swahili is missing
+  // Determine the display variables based on the active language toggle
+  const isSwahili = language === "sw";
 
-  const displaySummary = language === "en" 
-    ? report.summary 
-    : (report.summary_sw || report.summary);
+  const displayPollutionType = isSwahili ? (report.pollutionType_sw || report.pollutionType) : report.pollutionType;
+  const displayLikelySource = isSwahili ? (report.likelySource_sw || report.likelySource) : report.likelySource;
+  const displayHealthRisk = isSwahili ? (report.healthRisk_sw || report.healthRisk) : report.healthRisk;
+  const displayRecommendation = isSwahili ? (report.recommendation_sw || report.recommendation) : report.recommendation;
+  const displaySummary = isSwahili ? (report.summary_sw || report.summary) : report.summary;
+
+  // Helper to safely translate the strictly-typed severity string
+  const getSeverityText = () => {
+    if (!isSwahili) return report.severity;
+    if (report.severity === "High") return "Juu";
+    if (report.severity === "Medium") return "Kati";
+    if (report.severity === "Low") return "Chini";
+    return report.severity;
+  };
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 px-6 py-12">
@@ -142,14 +154,14 @@ export default function AnalysisPage() {
 
         <AIResultCard
           result={{
-            pollution_type: report.pollutionType,
+            pollution_type: displayPollutionType,
             confidence: report.confidence,
-            severity: report.severity,
+            severity: getSeverityText(),
             aqi_prediction: report.predictedAQI,
-            likely_source: report.likelySource,
-            health_risk: report.healthRisk,
-            recommended_action: displayRecommendation, // Passes the correct translated text
-            summary: displaySummary,                   // Passes the correct translated text
+            likely_source: displayLikelySource,
+            health_risk: displayHealthRisk,
+            recommended_action: displayRecommendation, 
+            summary: displaySummary,                  
           }}
         />
       </div>

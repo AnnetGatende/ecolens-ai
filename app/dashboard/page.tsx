@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { 
   AlertTriangle, Wind, Truck, Droplets, Activity, MapPin, 
   Satellite, Radio, CheckCircle2, Clock, Loader2, RotateCcw, 
-  ChevronDown, ChevronUp, Lock, ShieldCheck, ArrowRight, Search, Calendar
+  ChevronDown, ChevronUp, Lock, ShieldCheck, ArrowRight, Search, Calendar,
+  Trash2 // Added Trash2 import
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageContext";
 
@@ -52,7 +53,6 @@ export default function DashboardPage() {
 
     async function loadReports() {
       try {
-        // ADDED: { cache: "no-store" } to force fresh data every single time
         const response = await fetch("/api/map", { cache: "no-store" }); 
         
         if (response.ok) {
@@ -171,6 +171,35 @@ export default function DashboardPage() {
       console.error(error);
     } finally {
       setProcessing(prev => ({ ...prev, [reportId]: false }));
+    }
+  };
+
+  // --- DELETE FUNCTIONALITY ---
+  const handleDelete = async (reportId: string) => {
+    const confirmMessage = language === "en" 
+      ? "Are you sure you want to delete this report? This action cannot be undone."
+      : "Je, una uhakika unataka kufuta ripoti hii? Hatua hii haiwezi kutenguliwa.";
+      
+    const isConfirmed = window.confirm(confirmMessage);
+    
+    if (!isConfirmed) return;
+
+    setProcessing(prev => ({ ...prev, [`delete-${reportId}`]: true }));
+    try {
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setReports((prevReports) => prevReports.filter((report) => report.id !== reportId));
+      } else {
+        alert(language === "en" ? "Failed to delete the report. Please try again." : "Imeshindwa kufuta ripoti. Tafadhali jaribu tena.");
+      }
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      alert(language === "en" ? "An error occurred while deleting." : "Hitilafu imetokea wakati wa kufuta.");
+    } finally {
+      setProcessing(prev => ({ ...prev, [`delete-${reportId}`]: false }));
     }
   };
 
@@ -407,7 +436,8 @@ export default function DashboardPage() {
                       <div className="flex flex-col gap-3">
                         {group.reports.map((report) => {
                           const isResolved = report.status === "RESOLVED";
-                          const isProcessing = processing[report.id];
+                          const isProcessingAction = processing[report.id];
+                          const isProcessingDelete = processing[`delete-${report.id}`];
                           const isFire = report.pollutionType.toLowerCase().includes("smoke") || report.pollutionType.toLowerCase().includes("fire");
 
                           return (
@@ -427,34 +457,45 @@ export default function DashboardPage() {
                                 </div>
                               </div>
 
-                              <div className="shrink-0">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                                {/* DELETE BUTTON */}
+                                <button 
+                                  onClick={() => handleDelete(report.id)}
+                                  disabled={isProcessingDelete}
+                                  title={language === "en" ? "Delete Report" : "Futa Ripoti"}
+                                  className="flex items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 disabled:opacity-70"
+                                >
+                                  {isProcessingDelete ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                </button>
+
+                                {/* DISPATCH/REVOKE BUTTON */}
                                 {isResolved ? (
                                   <button 
                                     onClick={() => handleIndividualAction(report.id, "revoke")}
-                                    disabled={isProcessing}
+                                    disabled={isProcessingAction}
                                     className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-70"
                                   >
-                                    {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
-                                    {isProcessing 
+                                    {isProcessingAction ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+                                    {isProcessingAction 
                                       ? (language === "en" ? "Recalling..." : "Inarudisha...") 
                                       : (language === "en" ? "Recall Unit" : "Rudisha Kikosi")}
                                   </button>
                                 ) : (
                                   <button 
                                     onClick={() => handleIndividualAction(report.id, "dispatch")}
-                                    disabled={isProcessing}
+                                    disabled={isProcessingAction}
                                     className={`flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-70 ${
                                       isFire ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
                                     }`}
                                   >
-                                    {isProcessing ? (
+                                    {isProcessingAction ? (
                                       <Loader2 size={16} className="animate-spin" />
                                     ) : isFire ? (
                                       <Droplets size={16} /> 
                                     ) : (
                                       <Truck size={16} />
                                     )}
-                                    {isProcessing 
+                                    {isProcessingAction 
                                       ? (language === "en" ? "Deploying..." : "Inasambaza...") 
                                       : isFire 
                                         ? (language === "en" ? "Send Water Cannon" : "Tuma Gari la Maji") 

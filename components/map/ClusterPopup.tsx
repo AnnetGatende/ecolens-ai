@@ -17,6 +17,7 @@ import { useLanguage } from "@/components/LanguageContext";
 type Report = {
   id: string;
   pollutionType: string;
+  pollutionType_sw?: string; // Added Swahili field
   severity: string;
   predictedAQI: number;
   imageUrl: string | null;
@@ -104,7 +105,10 @@ export default function ClusterPopup({ hotspot, onClose }: Props) {
                 )}
 
                 <h3 className="font-bold text-lg text-gray-800">
-                  {report.pollutionType}
+                  {/* Now pulling the correct language natively from the database */}
+                  {language === "sw" 
+                    ? (report.pollutionType_sw || report.pollutionType) 
+                    : report.pollutionType}
                 </h3>
 
                 <div className="mt-3 grid grid-cols-2 gap-3">

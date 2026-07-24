@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background Shield (Deep Eco-Dark) -->
+  <circle cx="256" cy="256" r="256" fill="#022C22"/>
+  
+  <!-- Bold Vector Leaf (Neon Lime) - Nudged slightly higher -->
+  <path d="M256 75C160 145 110 225 110 315C110 385 170 425 256 425C342 425 402 385 402 315C402 225 352 145 256 75Z" fill="#84CC16"/>
+  
+  <!-- Leaf Central Vein (Darker Green for depth) -->
+  <path d="M256 145V365" stroke="#3F6212" stroke-width="20" stroke-linecap="round"/>
+  
+  <!-- AI Magnifying Lens Ring (Thick Pure White) -->
+  <circle cx="256" cy="240" r="100" stroke="#FFFFFF" stroke-width="32" fill="none"/>
+  
+  <!-- Magnifying Lens Handle -->
+  <line x1="325" y1="310" x2="410" y2="395" stroke="#FFFFFF" stroke-width="32" stroke-linecap="round"/>
+</svg>
