@@ -67,26 +67,36 @@ When a citizen uploads a pollution photo, Gemma performs a full multimodal analy
 
 ## 🏁 Getting Started Locally
 
-**Prerequisites:** Node.js (v18+) and npm installed.
+**Prerequisites:** 
+
+Node.js (v18+) and npm installed.
 
 **1. Clone the Repository**
+
 git clone [https://github.com/AnnetGatende/ecolens-ai.git](https://github.com/AnnetGatende/ecolens-ai.git)
+
 cd ecolens-ai
 
 **2. Install Dependencies**
+
 npm install
 
 **3. Configure Environment Variables**
+
 Create a `.env` file in the root directory:
-env
+
 DATABASE_URL="your-supabase-postgres-connection-string"
+
 NEXT_PUBLIC_GEMMA_API_KEY="your-gemma-api-key"
 
 **4. Run Database Migrations**
+
 npx prisma db push
 
 **5. Start the Development Server**
+
 npm run dev
+
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🎯 Usage Guide
