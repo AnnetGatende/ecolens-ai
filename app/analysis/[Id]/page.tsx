@@ -3,8 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
-import { useReactToPrint } from "react-to-print";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
+import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 
 import UploadedReport from "@/components/analysis/UploadedReport";
 import AIResultCard from "@/components/report/AIResultCard";
@@ -14,36 +15,38 @@ export const dynamic = "force-dynamic";
 
 type Report = {
   id: string;
+  reportNumber: number;
   imageUrl: string | null;
+  
   description: string;
+  description_en?: string | null; 
+  description_sw?: string | null; 
+  
   latitude: number;
   longitude: number;
-  
   displayLocation?: string | null;
   area?: string | null;
   ward?: string | null;
   subCounty?: string | null;
   county?: string | null;
-
   status: string;
   createdAt: string;
   confidence: number;
-  severity: string;
   predictedAQI: number;
   
-  // English Fields
   pollutionType: string;
   likelySource: string;
   healthRisk: string;
   recommendation: string;
   summary: string;
+  severity: string;
   
-  // Swahili Fields
-  pollutionType_sw?: string;
-  likelySource_sw?: string;
-  healthRisk_sw?: string;
-  recommendation_sw?: string;
-  summary_sw?: string;
+  pollutionType_sw?: string | null;
+  likelySource_sw?: string | null;
+  healthRisk_sw?: string | null;
+  recommendation_sw?: string | null;
+  summary_sw?: string | null;
+  severity_sw?: string | null;
 };
 
 export default function AnalysisPage() {
@@ -53,6 +56,7 @@ export default function AnalysisPage() {
 
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,14 +83,38 @@ export default function AnalysisPage() {
     }
   }, [Id]);
 
-  const handleDownloadPdf = useReactToPrint({
-    contentRef: contentRef,
-    documentTitle: `EcoLens_Report_${report?.id.substring(0, 6) || 'Export'}`,
-  });
+  // --- MODERN & STABLE PDF GENERATOR ---
+  const handleDownloadPdf = async () => {
+    if (!contentRef.current || !report) return;
+    setDownloading(true);
+    
+    try {
+      // html-to-image handles SVGs and modern CSS (like lab colors) perfectly
+      const dataUrl = await toPng(contentRef.current, {
+        quality: 1,
+        pixelRatio: 2, // High resolution for the PDF
+        backgroundColor: '#f8fafc', // Ensures the PDF has the slate-50 background
+      });
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (contentRef.current.offsetHeight * pdfWidth) / contentRef.current.offsetWidth;
+      
+      pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`EcoLens_Report_${report.reportNumber || report.id.substring(0,6)}.pdf`);
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      // Wrapped in setTimeout so the button stops spinning before the alert blocks the screen
+      setTimeout(() => alert(language === "en" ? "Failed to download PDF." : "Imeshindwa kupakua PDF."), 100);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="p-20 text-center text-xl font-medium text-gray-600">
+      <div className="flex flex-col items-center justify-center p-20 gap-4 text-xl font-medium text-emerald-700">
+        <Loader2 className="animate-spin w-8 h-8" />
         {language === "en" ? "Loading AI Analysis..." : "Inapakia Uchanganuzi wa AI..."}
       </div>
     );
@@ -107,7 +135,6 @@ export default function AnalysisPage() {
     );
   }
 
-  // Determine the display variables based on the active language toggle
   const isSwahili = language === "sw";
 
   const displayPollutionType = isSwahili ? (report.pollutionType_sw || report.pollutionType) : report.pollutionType;
@@ -115,15 +142,11 @@ export default function AnalysisPage() {
   const displayHealthRisk = isSwahili ? (report.healthRisk_sw || report.healthRisk) : report.healthRisk;
   const displayRecommendation = isSwahili ? (report.recommendation_sw || report.recommendation) : report.recommendation;
   const displaySummary = isSwahili ? (report.summary_sw || report.summary) : report.summary;
+  const displaySeverity = isSwahili ? (report.severity_sw || report.severity) : report.severity;
 
-  // Helper to safely translate the strictly-typed severity string
-  const getSeverityText = () => {
-    if (!isSwahili) return report.severity;
-    if (report.severity === "High") return "Juu";
-    if (report.severity === "Medium") return "Kati";
-    if (report.severity === "Low") return "Chini";
-    return report.severity;
-  };
+  const displayDescription = isSwahili 
+    ? (report.description_sw || report.description) 
+    : (report.description_en || report.description);
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 px-6 py-12">
@@ -137,26 +160,33 @@ export default function AnalysisPage() {
           {language === "en" ? "Back to Analysis Center" : "Rudi kwenye Kituo cha Uchanganuzi"}
         </Link>
 
+        <h1 className="text-xl font-bold text-slate-800">
+          {language === "en" ? `Incident Report #${report.reportNumber || 'N/A'}` : `Ripoti ya Tukio #${report.reportNumber || 'N/A'}`}
+        </h1>
+
         <button
-          onClick={() => handleDownloadPdf()}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+          onClick={handleDownloadPdf}
+          disabled={downloading}
+          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-70"
         >
-          <Download size={18} />
-          {language === "en" ? "Download Official Report" : "Pakua Ripoti Rasmi"}
+          {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+          {downloading 
+            ? (language === "en" ? "Generating PDF..." : "Inatengeneza PDF...") 
+            : (language === "en" ? "Download Official Report" : "Pakua Ripoti Rasmi")}
         </button>
       </div>
 
       <div 
         ref={contentRef} 
-        className="space-y-8 pb-4 print:p-8 print:bg-white"
+        className="space-y-8 pb-4 bg-slate-50 p-6 sm:p-10 rounded-3xl print:bg-white print:p-0"
       >
-        <UploadedReport report={report} />
+        <UploadedReport report={{ ...report, description: displayDescription }} />
 
         <AIResultCard
           result={{
             pollution_type: displayPollutionType,
             confidence: report.confidence,
-            severity: getSeverityText(),
+            severity: displaySeverity,
             aqi_prediction: report.predictedAQI,
             likely_source: displayLikelySource,
             health_risk: displayHealthRisk,

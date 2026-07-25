@@ -1,6 +1,6 @@
 "use client";
 
-import { Popup } from "react-map-gl/maplibre";
+import { Rnd } from "react-rnd";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -11,13 +11,15 @@ import {
   ImageOff,
   Clock,
   Calendar,
+  X,
+  GripHorizontal,
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageContext";
 
 type Report = {
   id: string;
   pollutionType: string;
-  pollutionType_sw?: string; // Added Swahili field
+  pollutionType_sw?: string;
   severity: string;
   predictedAQI: number;
   imageUrl: string | null;
@@ -42,44 +44,71 @@ export default function ClusterPopup({ hotspot, onClose }: Props) {
 
   if (!hotspot.reports.length) return null;
 
-  // Helper to translate severity if it comes raw from the database
   const getSeverityTranslation = (severity: string) => {
     if (language === "en") return severity;
     const lower = severity.toLowerCase();
-    if (lower === "critical") return "Hatari Sana";
+    if (lower === "critical") return "Hatari";
     if (lower === "severe") return "Vikali";
     if (lower === "high") return "Juu";
-    if (lower === "medium" || lower === "moderate") return "Kati";
+    if (lower === "moderate" || lower === "medium") return "Wastani";
     if (lower === "low") return "Chini";
     return severity;
   };
 
+  // --- STRICT DB TITLE LOGIC ---
+  const getPollutionTitle = (report: Report) => {
+    if (language === "sw") {
+      return report.pollutionType_sw || report.pollutionType;
+    }
+    return report.pollutionType;
+  };
+
   return (
-    <Popup
-      longitude={hotspot.longitude}
-      latitude={hotspot.latitude}
-      anchor="top"
-      closeOnClick={false}
-      onClose={onClose}
-      offset={30}
-      maxWidth="420px"
-      className="z-50"
+    <Rnd
+      default={{
+        x: 30, 
+        y: 80,
+        width: 410,
+        height: "auto",
+      }}
+      minWidth={340}
+      maxWidth={480}
+      bounds="parent"
+      dragHandleClassName="drag-handle" 
+      enableUserSelectHack={false} 
+      className="z-50 shadow-2xl rounded-2xl bg-white/95 backdrop-blur-md border border-gray-200 overflow-hidden"
     >
-      <div className="w-[390px] p-1">
-        <div className="mb-4 border-b pb-4">
-          <h2 className="text-xl font-bold text-gray-900 flex items-start gap-2">
-            <MapPin className="text-blue-600 mt-1 shrink-0" size={22} />
-            <span>{hotspot.displayLocation}</span>
-          </h2>
-          <p className="text-sm text-gray-500 font-medium mt-1 ml-8">
-            {language === "en" ? "Neighborhood Hotspot" : "Eneo Hatari la Mtaa"} • {hotspot.reports.length} {language === "en" ? "Reports" : "Ripoti"}
-          </p>
+      <div className="w-full p-4">
+        <div className="drag-handle mb-4 border-b pb-3 cursor-grab active:cursor-grabbing select-none flex items-start justify-between">
+          <div className="flex-1 pr-2">
+            <div className="flex items-center gap-1.5 text-xs text-gray-400 font-semibold mb-1">
+              <GripHorizontal size={16} className="text-gray-400 shrink-0" />
+              <span>{language === "en" ? "Drag to Move" : "Sogeza Hapa"}</span>
+            </div>
+            
+            <h2 className="text-lg font-bold text-gray-900 flex items-start gap-2 leading-snug">
+              <MapPin className="text-blue-600 mt-0.5 shrink-0" size={20} />
+              <span>{hotspot.displayLocation}</span>
+            </h2>
+            
+            <p className="text-xs text-gray-500 font-medium mt-1 ml-7">
+              {language === "en" ? "Neighborhood Hotspot" : "Eneo Hatari la Mtaa"} • {hotspot.reports.length} {language === "en" ? "Reports" : "Ripoti"}
+            </p>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition"
+            title={language === "en" ? "Close" : "Funga"}
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <div className="max-h-[440px] space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="max-h-[420px] space-y-4 overflow-y-auto pr-1 custom-scrollbar">
           {hotspot.reports.map((report) => {
             const reportDate = new Date(report.createdAt);
-            
+
             return (
               <div
                 key={report.id}
@@ -105,10 +134,7 @@ export default function ClusterPopup({ hotspot, onClose }: Props) {
                 )}
 
                 <h3 className="font-bold text-lg text-gray-800">
-                  {/* Now pulling the correct language natively from the database */}
-                  {language === "sw" 
-                    ? (report.pollutionType_sw || report.pollutionType) 
-                    : report.pollutionType}
+                  {getPollutionTitle(report)}
                 </h3>
 
                 <div className="mt-3 grid grid-cols-2 gap-3">
@@ -150,6 +176,6 @@ export default function ClusterPopup({ hotspot, onClose }: Props) {
           })}
         </div>
       </div>
-    </Popup>
+    </Rnd>
   );
 }

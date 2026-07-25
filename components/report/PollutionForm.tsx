@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguage } from "@/components/LanguageContext"; 
+import { reverseGeocode } from "@/lib/geocoding";
 
 type Props = {
   image: File | null;
@@ -13,11 +13,42 @@ type Props = {
   longitude: number | null;
 };
 
-export default function PollutionForm({
-  image,
-  latitude,
-  longitude,
-}: Props) {
+// --- CLIENT-SIDE RESIZER UTILITY ---
+const resizeImage = (file: File, maxWidth = 1024): Promise<File> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const scaleSize = maxWidth / img.width;
+        
+        // Only resize if the image is larger than maxWidth
+        if (scaleSize < 1) {
+          canvas.width = maxWidth;
+          canvas.height = img.height * scaleSize;
+        } else {
+          canvas.width = img.width;
+          canvas.height = img.height;
+        }
+
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const newFile = new File([blob], file.name, { type: file.type });
+            resolve(newFile);
+          }
+        }, file.type, 0.8); // 80% JPEG quality
+      };
+    };
+  });
+};
+
+export default function PollutionForm({ image, latitude, longitude }: Props) {
   const router = useRouter();
   const { language } = useLanguage(); 
 
@@ -25,6 +56,7 @@ export default function PollutionForm({
   const [category, setCategory] = useState("");
   const [severity, setSeverity] = useState("");
   const [loading, setLoading] = useState(false);
+  const [locationString, setLocationString] = useState("Unknown Location");
 
   const [errors, setErrors] = useState({
     image: false,
@@ -32,29 +64,23 @@ export default function PollutionForm({
     location: false,
   });
 
-  function validate() {
-    const newErrors = {
-      image: false,
-      description: false,
-      location: false,
-    };
+  useEffect(() => {
+    async function fetchFormattedLocation() {
+      if (latitude !== null && longitude !== null) {
+        const data = await reverseGeocode(latitude, longitude);
+        setLocationString(data.displayLocation);
+      }
+    }
+    fetchFormattedLocation();
+  }, [latitude, longitude]);
 
+  function validate() {
+    const newErrors = { image: false, description: false, location: false };
     let valid = true;
 
-    if (!image) {
-      newErrors.image = true;
-      valid = false;
-    }
-
-    if (description.trim().length < 10) {
-      newErrors.description = true;
-      valid = false;
-    }
-
-    if (latitude === null || longitude === null) {
-      newErrors.location = true;
-      valid = false;
-    }
+    if (!image) { newErrors.image = true; valid = false; }
+    if (description.trim().length < 10) { newErrors.description = true; valid = false; }
+    if (latitude === null || longitude === null) { newErrors.location = true; valid = false; }
 
     setErrors(newErrors);
     return valid;
@@ -64,28 +90,20 @@ export default function PollutionForm({
     if (!validate()) return;
     if (!image) return;
 
-    // --- NEW: Vercel 4MB File Size Limit Check ---
-    const fileSizeInMB = image.size / (1024 * 1024);
-    if (fileSizeInMB > 4) {
-      alert(
-        language === "en" 
-          ? "Sorry, the image is too large! Please upload a photo under 4MB." 
-          : "Samahani, picha ni kubwa mno! Tafadhali pakia picha chini ya 4MB."
-      );
-      return; // Stops the execution right here so Vercel doesn't crash
-    }
-    // ---------------------------------------------
-
     setLoading(true);
 
     try {
+      // Compress the image before uploading
+      const compressedImage = await resizeImage(image);
+
       const formData = new FormData();
-      formData.append("image", image);
+      formData.append("image", compressedImage);
       formData.append("description", description);
       formData.append("latitude", latitude!.toString());
       formData.append("longitude", longitude!.toString());
       formData.append("category", category);
       formData.append("severity", severity);
+      formData.append("locationString", locationString);
 
       const response = await fetch("/api/analyze", {
         method: "POST",
@@ -93,8 +111,6 @@ export default function PollutionForm({
       });
 
       const data = await response.json();
-
-      console.log("Analyze Response:", data);
 
       if (!data.success) {
         alert(
@@ -130,7 +146,6 @@ export default function PollutionForm({
 
   return (
     <div className="rounded-2xl border bg-white shadow-lg p-6 space-y-6">
-      
       <div>
         <h2 className="text-2xl font-bold">
           {language === "en" ? "Pollution Details" : "Maelezo ya Uchafuzi"}

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PollutionForm from "@/components/report/PollutionForm";
 import { Button } from "@/components/ui/button";
 import { Camera, MapPin } from "lucide-react";
 import { useLanguage } from "@/components/LanguageContext";
+import { reverseGeocode } from "@/lib/geocoding"; // Ensure this path matches your folder structure
 
 export default function ReportPage() {
   const { language } = useLanguage();
@@ -13,6 +14,7 @@ export default function ReportPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [latitude, setLatitude] = useState<number | null>(-4.086094);
   const [longitude, setLongitude] = useState<number | null>(39.664935);
+  const [displayLocation, setDisplayLocation] = useState<string>("");
   const [detecting, setDetecting] = useState(false);
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -43,6 +45,17 @@ export default function ReportPage() {
       setDetecting(false);
     }
   }
+
+  // --- NEW: Automatically fetch the formatted address when coordinates change ---
+  useEffect(() => {
+    async function fetchAddress() {
+      if (latitude && longitude) {
+        const data = await reverseGeocode(latitude, longitude);
+        setDisplayLocation(data.displayLocation);
+      }
+    }
+    fetchAddress();
+  }, [latitude, longitude]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-emerald-50/50 to-white py-12">
@@ -97,7 +110,7 @@ export default function ReportPage() {
           {/* Right Column: GPS and Why It Matters */}
           <div className="space-y-6">
             
-            {/* GPS Card */}
+            {/* --- UPDATED GPS Card --- */}
             <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -113,15 +126,31 @@ export default function ReportPage() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm bg-slate-50 p-4 rounded-xl">
-                <div>
-                  <span className="text-slate-500 block">{language === "en" ? "Latitude" : "Latitudo"}</span>
-                  <span className="font-mono font-bold text-slate-800">{latitude ?? "N/A"}</span>
-                </div>
-                <div>
-                  <span className="text-slate-500 block">{language === "en" ? "Longitude" : "Longitudo"}</span>
-                  <span className="font-mono font-bold text-slate-800">{longitude ?? "N/A"}</span>
-                </div>
+              {/* Renders the beautifully formatted string */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                {displayLocation ? (
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm text-slate-500 font-semibold uppercase tracking-wider">
+                      {language === "en" ? "Detected Area" : "Eneo Lililogunduliwa"}
+                    </p>
+                    <p className="text-lg font-bold text-emerald-900 leading-snug">
+                      📍 {displayLocation}
+                    </p>
+                    {/* Keep the raw coordinates subtle but visible for technical reference */}
+                    <div className="flex gap-4 mt-3 text-xs text-slate-400 font-mono">
+                      <span>Lat: {latitude}</span>
+                      <span>Lon: {longitude}</span>
+                    </div>
+                  </div>
+                ) : latitude && longitude ? (
+                  <p className="text-slate-500 font-medium">
+                    {language === "en" ? "Formatting location..." : "Inatafsiri eneo..."}
+                  </p>
+                ) : (
+                  <p className="text-slate-500 font-medium">
+                    {language === "en" ? "Click 'Refresh GPS' to detect location." : "Bofya 'Sasisha GPS' kupata eneo."}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -150,7 +179,6 @@ export default function ReportPage() {
             </div>
 
           </div>
-
         </div>
       </div>
     </main>

@@ -9,6 +9,7 @@ type Props = {
     id: string;
     imageUrl: string | null;
     pollutionType: string;
+    pollutionType_sw?: string | null; // Added this field
     severity: string;
     predictedAQI: number;
     status: string;
@@ -19,24 +20,31 @@ type Props = {
 export default function ReportCard({ report }: Props) {
   const { language } = useLanguage();
 
-  const severityColor =
-    report.severity === "High"
-      ? "bg-red-100 text-red-700"
-      : report.severity === "Medium"
-      ? "bg-yellow-100 text-yellow-700"
-      : "bg-green-100 text-green-700";
+  // Updated to support the new 5-tier AQI severity scale
+  const getSeverityColor = (severity: string) => {
+    const lower = severity.toLowerCase();
+    if (lower === "critical") return "bg-red-900 text-white";
+    if (lower === "severe") return "bg-red-200 text-red-800";
+    if (lower === "high") return "bg-orange-100 text-orange-700";
+    if (lower === "moderate" || lower === "medium") return "bg-yellow-100 text-yellow-700";
+    return "bg-green-100 text-green-700"; // Low
+  };
 
   const statusColor =
     report.status === "RESOLVED"
       ? "bg-green-100 text-green-700"
       : "bg-yellow-100 text-yellow-700";
 
-  // Translation helpers for dynamic data
+  // --- FIXED: Translations strictly match the Map Legend ---
   const getSeverityTranslation = (severity: string) => {
     if (language === "en") return `${severity} Severity`;
-    if (severity === "High") return "Ukali: Juu";
-    if (severity === "Medium") return "Ukali: Kati";
-    return "Ukali: Chini";
+    
+    const lower = severity.toLowerCase();
+    if (lower === "critical") return "Ukali: Hatari";
+    if (lower === "severe") return "Ukali: Vikali";
+    if (lower === "high") return "Ukali: Juu";
+    if (lower === "moderate" || lower === "medium") return "Ukali: Wastani";
+    return "Ukali: Chini"; // Low
   };
 
   const getStatusTranslation = (status: string) => {
@@ -65,7 +73,7 @@ export default function ReportCard({ report }: Props) {
 
       <div className="space-y-4 p-5">
         <div className="flex items-center justify-between">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${severityColor}`}>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getSeverityColor(report.severity)}`}>
             {getSeverityTranslation(report.severity)}
           </span>
 
@@ -74,7 +82,12 @@ export default function ReportCard({ report }: Props) {
           </span>
         </div>
 
-        <h2 className="text-xl font-bold">{report.pollutionType}</h2>
+        {/* --- FIXED: Toggles title based on language state --- */}
+        <h2 className="text-xl font-bold">
+          {language === "sw" 
+            ? (report.pollutionType_sw || report.pollutionType) 
+            : report.pollutionType}
+        </h2>
 
         <div className="space-y-2 text-sm text-gray-600">
           <div className="flex justify-between">

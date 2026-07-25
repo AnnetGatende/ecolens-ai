@@ -10,9 +10,12 @@ datasource db {
 
 model PollutionReport {
   id                String   @id @default(cuid())
+  reportNumber      Int      @default(autoincrement()) // Generates 1, 2, 3... natively
 
   // Citizen Report
   description       String
+  description_en    String?  // NEW: Gemma translated English
+  description_sw    String?  // NEW: Gemma translated Swahili
   imageUrl          String?
 
   latitude          Float
@@ -28,11 +31,12 @@ model PollutionReport {
   userCategory      String?
   userSeverity      String?
 
-  // Gemma AI Analysis (Bilingual)
+  // Gemma AI Analysis (Strict Bilingual)
   pollutionType     String
   pollutionType_sw  String?
   confidence        Float
   severity          String
+  severity_sw       String?  // NEW: Stores exact Swahili map legend term
   likelySource      String
   likelySource_sw   String?
   predictedAQI      Int
@@ -48,8 +52,8 @@ model PollutionReport {
   municipalAlertSent Boolean @default(false)
   hotspotDetected    Boolean @default(false)
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 enum ReportStatus {

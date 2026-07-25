@@ -9,7 +9,7 @@ import { Search, Calendar, ChevronDown } from "lucide-react";
 
 import MapLegend from "./MapLegend";
 import ClusterPopup from "./ClusterPopup";
-import { useLanguage } from "@/components/LanguageContext"; // Imported the hook
+import { useLanguage } from "@/components/LanguageContext";
 
 type Report = {
   id: string;
@@ -36,16 +36,23 @@ type Hotspot = {
   reports: Report[];
 };
 
+// Added severity tracking to the cluster properties
 type CustomClusterProperties = {
   total_reports: number; 
+  max_severity: string;
+  max_weight: number;
 };
 
 type TimeframeOption = "ALL" | "TODAY" | "THIS_WEEK" | "THIS_MONTH";
 
 type SuperclusterFeature = Supercluster.ClusterFeature<CustomClusterProperties> | Supercluster.PointFeature<Hotspot>;
 
+const severityWeights: Record<string, number> = {
+  low: 1, moderate: 2, medium: 2, high: 3, orange: 3, severe: 4, red: 4, critical: 5,
+};
+
 export default function MapView() {
-  const { language } = useLanguage(); // Grab current language
+  const { language } = useLanguage();
   const mapRef = useRef<MapRef>(null);
 
   const [reports, setReports] = useState<Report[]>([]);
@@ -74,20 +81,17 @@ export default function MapView() {
     loadReports();
   }, []);
 
-  // --- ADVANCED MAP SEARCH & DATE FILTERING ---
   const filteredReports = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     const now = new Date();
 
     return reports.filter((report) => {
-      // Search text match
       const matchSearch =
         !query ||
         report.pollutionType.toLowerCase().includes(query) ||
         (report.displayLocation && report.displayLocation.toLowerCase().includes(query)) ||
         (report.area && report.area.toLowerCase().includes(query));
 
-      // Timeframe match
       const reportDate = new Date(report.createdAt);
       let matchTimeframe = true;
 
@@ -108,13 +112,13 @@ export default function MapView() {
     });
   }, [reports, searchQuery, timeframe]);
 
-  // Group filtered reports into geographic hotspots
+  // FIXED: Group only if they share EXACT same lat/lon so they separate properly when zooming
   const hotspots = useMemo(() => {
     const map = new Map<string, { latSum: number; lonSum: number; reports: Report[]; displayLocation: string }>();
 
     filteredReports.forEach((report) => {
-      const key = report.displayLocation || `Grid-${report.latitude.toFixed(3)}-${report.longitude.toFixed(3)}`;
-      // Translated fallback location
+      // Use coordinates as the unique key, not the display location string
+      const key = `${report.latitude}-${report.longitude}`;
       const displayName = report.displayLocation || (language === "en" ? "Unknown Location" : "Eneo Lisilojulikana");
 
       if (!map.has(key)) {
@@ -126,10 +130,6 @@ export default function MapView() {
       hs.latSum += report.latitude;
       hs.lonSum += report.longitude;
     });
-
-    const severityWeights: Record<string, number> = {
-      low: 1, moderate: 2, medium: 2, high: 3, orange: 3, severe: 4, red: 4, critical: 5,
-    };
 
     return Array.from(map.values()).map((hs, index) => {
       let maxSeverity = "Low";
@@ -152,14 +152,29 @@ export default function MapView() {
         reports: hs.reports,
       } as Hotspot;
     });
-  }, [filteredReports, language]); // Added language dependency here
+  }, [filteredReports, language]);
 
+  // FIXED: Supercluster now maps and reduces severity so parent clusters get colored correctly
   const supercluster = useMemo(() => {
     const sc = new Supercluster<Hotspot, CustomClusterProperties>({
-      radius: 60,
+      radius: 50, // Slightly smaller radius to help them split earlier
       maxZoom: 20,
-      map: (props) => ({ total_reports: props.reports.length }),
-      reduce: (acc, props) => { acc.total_reports += props.total_reports; },
+      map: (props) => {
+        const weight = severityWeights[props.severity?.toLowerCase()] || 1;
+        return {
+          total_reports: props.reports.length,
+          max_severity: props.severity || "Low",
+          max_weight: weight,
+        };
+      },
+      reduce: (acc, props) => {
+        acc.total_reports += props.total_reports;
+        // If a child point has a higher severity, the parent cluster takes that severity
+        if (props.max_weight > acc.max_weight) {
+          acc.max_weight = props.max_weight;
+          acc.max_severity = props.max_severity;
+        }
+      },
     });
 
     const points: Array<Supercluster.PointFeature<Hotspot>> = hotspots.map((hotspot) => ({
@@ -201,10 +216,38 @@ export default function MapView() {
     return "bg-green-500";
   };
 
-  const handleClusterClick = (clusterId: number, longitude: number, latitude: number, e: MouseEvent) => {
-    e.stopPropagation();
+  const handleClusterClick = (clusterId: number, longitude: number, latitude: number, e: any) => {
+    e.stopPropagation(); 
+
+    const currentZoom = Math.round(viewState.zoom);
     const expansionZoom = Math.min(supercluster.getClusterExpansionZoom(clusterId), 20);
-    mapRef.current?.flyTo({ center: [longitude, latitude], zoom: expansionZoom, duration: 700 });
+
+    if (expansionZoom > currentZoom) {
+      mapRef.current?.flyTo({ center: [longitude, latitude], zoom: expansionZoom, duration: 700 });
+    } else {
+      const leaves = supercluster.getLeaves(clusterId, Infinity);
+      const allReports = leaves.flatMap((leaf) => leaf.properties.reports);
+
+      let maxSeverity = "Low";
+      let maxWeight = 0;
+
+      allReports.forEach((r) => {
+        const weight = severityWeights[r.severity.toLowerCase()] || 0;
+        if (weight > maxWeight) {
+          maxWeight = weight;
+          maxSeverity = r.severity;
+        }
+      });
+
+      setSelectedHotspot({
+        id: `grouped-cluster-${clusterId}`,
+        displayLocation: leaves[0].properties.displayLocation || (language === "en" ? "Clustered Area" : "Eneo Lililokusanywa"),
+        latitude,
+        longitude,
+        severity: maxSeverity,
+        reports: allReports,
+      });
+    }
   };
 
   return (
@@ -212,8 +255,6 @@ export default function MapView() {
       
       {/* FLOATING MAP SEARCH & TIMEFRAME BAR */}
       <div className="absolute top-4 left-4 z-10 flex flex-col sm:flex-row items-center gap-2 w-full max-w-xs sm:max-w-md">
-        
-        {/* Search Input */}
         <div className="relative shadow-lg rounded-xl w-full">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search className="h-4 w-4 text-slate-500" />
@@ -227,7 +268,6 @@ export default function MapView() {
           />
         </div>
 
-        {/* Date Filter Dropdown */}
         <div className="relative shadow-lg rounded-xl w-full sm:w-36 shrink-0">
           <div className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none">
             <Calendar className="h-3.5 w-3.5 text-slate-500" />
@@ -246,7 +286,6 @@ export default function MapView() {
             <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
           </div>
         </div>
-
       </div>
 
       <MapLegend />
@@ -270,6 +309,9 @@ export default function MapView() {
             const clusterProps = cluster.properties as Supercluster.ClusterProperties & CustomClusterProperties;
             const reportCount = clusterProps.total_reports;
             const size = 32 + (reportCount / (reports.length || 1)) * 40;
+            
+            // FIXED: Apply the severity color to the main cluster bubble
+            const clusterColor = getMarkerColor(clusterProps.max_severity || "Low");
 
             return (
               <Marker
@@ -280,7 +322,7 @@ export default function MapView() {
                 onClick={(e) => handleClusterClick(clusterProps.cluster_id, longitude, latitude, e.originalEvent)}
               >
                 <div
-                  className="flex items-center justify-center rounded-full bg-blue-600/95 text-white font-bold shadow-lg shadow-blue-900/20 border-2 border-white cursor-pointer transition-transform hover:scale-110"
+                  className={`flex items-center justify-center rounded-full text-white font-bold shadow-lg border-2 border-white cursor-pointer transition-transform hover:scale-110 ${clusterColor}`}
                   style={{ width: `${size}px`, height: `${size}px` }}
                 >
                   {reportCount}

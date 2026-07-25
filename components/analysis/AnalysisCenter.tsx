@@ -7,6 +7,7 @@ type Report = {
   id: string;
   imageUrl: string | null;
   pollutionType: string;
+  pollutionType_sw?: string | null; // Added Swahili type
   severity: string;
   predictedAQI: number;
   status: string;

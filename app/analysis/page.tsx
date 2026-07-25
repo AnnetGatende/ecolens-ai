@@ -11,6 +11,7 @@ type Report = {
   id: string;
   imageUrl: string | null;
   pollutionType: string;
+  pollutionType_sw?: string | null; 
   severity: string;
   status: string;
   predictedAQI: number;
@@ -38,21 +39,29 @@ export default function AnalysisDashboard() {
     fetchReports();
   }, []);
 
-  // --- FRONTEND TRANSLATION DICTIONARY ---
-  // This intercepts the English database category and translates it for the UI
-  const getTranslatedType = (type: string) => {
-    if (language === "en") return type; // Keep English if toggle is EN
-    
-    const lowerType = type.toLowerCase();
-    
-    if (lowerType.includes("wildfire smoke") || lowerType.includes("fire")) return "Moshi wa Moto wa Mwitu";
-    if (lowerType.includes("air pollution")) return "Uchafuzi wa Hewa";
-    if (lowerType.includes("plastic") || lowerType.includes("solid waste")) return "Taka za Plastiki na Ngumu";
-    if (lowerType.includes("water")) return "Uchafuzi wa Maji";
-    if (lowerType.includes("noise")) return "Uchafuzi wa Kelele";
-    if (lowerType.includes("chemical") || lowerType.includes("toxic")) return "Taka za Kemikali";
-    
-    return type; // Fallback to original if it doesn't match the dictionary
+  // --- STRICT DB TITLE LOGIC ---
+  const getPollutionTitle = (report: Report) => {
+    if (language === "sw") {
+      return report.pollutionType_sw || report.pollutionType;
+    }
+    return report.pollutionType;
+  };
+
+  const getSeverityColor = (severity: string) => {
+    const lower = severity?.toLowerCase() || "";
+    if (lower === "critical" || lower === "severe" || lower === "high") return "text-red-500";
+    if (lower === "moderate" || lower === "medium") return "text-yellow-600";
+    return "text-emerald-500";
+  };
+
+  const getSeverityTranslation = (severity: string) => {
+    if (language === "en") return `Severity: ${severity}`;
+    const lower = severity?.toLowerCase() || "";
+    if (lower === "critical") return "Ukali: Hatari";
+    if (lower === "severe") return "Ukali: Vikali";
+    if (lower === "high") return "Ukali: Juu";
+    if (lower === "moderate" || lower === "medium") return "Ukali: Wastani";
+    return "Ukali: Chini";
   };
 
   if (loading) {
@@ -69,12 +78,11 @@ export default function AnalysisDashboard() {
   const total = reports.length;
   const pending = reports.filter(r => r.status !== "RESOLVED").length;
   const resolved = reports.filter(r => r.status === "RESOLVED").length;
-  const critical = reports.filter(r => r.predictedAQI > 150 || r.severity.toLowerCase() === "high").length;
+  const critical = reports.filter(r => r.predictedAQI > 150 || r.severity.toLowerCase() === "high" || r.severity.toLowerCase() === "severe" || r.severity.toLowerCase() === "critical").length;
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-12 space-y-12">
       
-      {/* 4 Stat Cards */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <p className="text-sm font-medium text-slate-500">{language === "en" ? "Total Reports" : "Jumla ya Ripoti"}</p>
@@ -94,7 +102,6 @@ export default function AnalysisDashboard() {
         </div>
       </div>
 
-      {/* Grid Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-slate-800">
           {language === "en" ? "Incident Reports" : "Ripoti za Matukio"}
@@ -104,7 +111,6 @@ export default function AnalysisDashboard() {
         </span>
       </div>
 
-      {/* Image Cards Grid */}
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {reports.map((report) => (
           <Link key={report.id} href={`/analysis/${report.id}`} className="group flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg">
@@ -122,11 +128,10 @@ export default function AnalysisDashboard() {
             
             <div className="flex flex-col flex-grow p-5">
               <div className="flex justify-between items-center mb-3 text-xs font-bold uppercase tracking-wider">
-                <span className={report.severity.toLowerCase() === "high" || report.severity.toLowerCase() === "juu" ? "text-red-500" : "text-emerald-500"}>
-                  {language === "en" 
-                    ? `Severity: ${report.severity}` 
-                    : `Ukali: ${report.severity.toLowerCase() === "high" ? "Juu" : report.severity.toLowerCase() === "medium" ? "Kati" : "Chini"}`}
+                <span className={getSeverityColor(report.severity)}>
+                  {getSeverityTranslation(report.severity)}
                 </span>
+
                 <span className={report.status === "RESOLVED" ? "text-emerald-500 bg-emerald-50 px-2 py-1 rounded" : "text-yellow-600 bg-yellow-50 px-2 py-1 rounded"}>
                   {report.status === "RESOLVED" 
                     ? (language === "en" ? "RESOLVED" : "IMETATULIWA") 
@@ -134,9 +139,8 @@ export default function AnalysisDashboard() {
                 </span>
               </div>
               
-              {/* Using the new translation function here! */}
               <h3 className="text-lg font-bold text-slate-800 truncate mb-4">
-                {getTranslatedType(report.pollutionType)}
+                {getPollutionTitle(report)}
               </h3>
               
               <div className="mt-auto pt-4 border-t border-slate-100">

@@ -1,43 +1,35 @@
-export async function reverseGeocode(latitude: number, longitude: number) {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`;
-  
-    try {
-      const response = await fetch(url, {
-        headers: {
-          // Nominatim requires a user-agent
-          "User-Agent": "EcoLens-AI/1.0",
-        },
-      });
-  
-      if (!response.ok) throw new Error("Geocoding failed");
-  
-      const data = await response.json();
-      const address = data.address || {};
-  
-      const county = address.county || address.state_district || address.state || null;
-      const subCounty = address.city || address.town || address.municipality || null;
-      const ward = address.suburb || address.village || address.district || null;
-      const area = address.neighbourhood || address.residential || address.hamlet || address.road || null;
-  
-      // Create a fallback display location by filtering out nulls
-      const locationParts = [area, ward, subCounty, county].filter(Boolean);
-      const displayLocation = locationParts.length > 0 ? locationParts.join(", ") : "Unknown Location";
-  
+export async function reverseGeocode(lat: number, lon: number) {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+      { headers: { "User-Agent": "EcoLens-AI-App" } }
+    );
+    const data = await res.json();
+    
+    if (data && data.address) {
+      // Smarter mapping for Kenyan boundaries
+      const county = data.address.state || data.address.county || "Mombasa";
+      const subCounty = data.address.city_district || data.address.town || data.address.city || "Likoni";
+      const ward = data.address.suburb || data.address.neighbourhood || data.address.village || "Unknown Ward";
+      const area = data.address.road || data.address.residential || null;
+
       return {
-        county,
+        county: county.replace(" County", ""),
         subCounty,
         ward,
         area,
-        displayLocation,
-      };
-    } catch (error) {
-      console.error("Reverse geocoding error:", error);
-      return {
-        county: null,
-        subCounty: null,
-        ward: null,
-        area: null,
-        displayLocation: "Unknown Location",
+        displayLocation: `County - ${county.replace(" County", "")}, Sub-County - ${subCounty}, Ward - ${ward}`,
       };
     }
+  } catch (error) {
+    console.error("Geocoding failed:", error);
   }
+  
+  return {
+    county: "Unknown",
+    subCounty: "Unknown",
+    ward: "Unknown",
+    area: null,
+    displayLocation: `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`,
+  };
+}

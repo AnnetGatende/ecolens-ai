@@ -5,13 +5,14 @@ import {
   AlertTriangle, Wind, Truck, Droplets, Activity, MapPin, 
   Satellite, Radio, CheckCircle2, Clock, Loader2, RotateCcw, 
   ChevronDown, ChevronUp, Lock, ShieldCheck, ArrowRight, Search, Calendar,
-  Trash2 // Added Trash2 import
+  Trash2
 } from "lucide-react";
 import { useLanguage } from "@/components/LanguageContext";
 
 type Report = {
   id: string;
   pollutionType: string;
+  pollutionType_sw?: string | null;
   severity: string;
   predictedAQI: number;
   displayLocation?: string | null;
@@ -68,17 +69,26 @@ export default function DashboardPage() {
     loadReports();
   }, [isAuthenticated]);
 
+  // --- STRICT DB TITLE LOGIC ---
+  const getPollutionTitle = (report: Report) => {
+    if (language === "sw") {
+      return report.pollutionType_sw || report.pollutionType;
+    }
+    return report.pollutionType;
+  };
+
   // --- ADVANCED FILTERING (Search + Timeframe) ---
   const filteredReports = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     const now = new Date();
 
     return reports.filter((report) => {
-      // 1. Text Search Filter
+      // 1. Text Search Filter (Checks Swahili titles too!)
       const matchSearch =
         !query ||
         report.id.toLowerCase().includes(query) ||
         report.pollutionType.toLowerCase().includes(query) ||
+        (report.pollutionType_sw && report.pollutionType_sw.toLowerCase().includes(query)) ||
         (report.displayLocation?.toLowerCase() || "").includes(query);
 
       // 2. Timeframe Filter
@@ -231,7 +241,6 @@ export default function DashboardPage() {
                 : "Ufikiaji Umezuiwa. Tafadhali weka nenosiri la idhini ya usambazaji ili kudhibiti rasilimali za jiji."}
             </p>
 
-            {/* HACKATHON JUDGE HINT */}
             <div className="mt-6 w-full rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-4">
               <p className="text-sm font-semibold text-emerald-400 tracking-wide flex items-center justify-center gap-2">
                 🛠️ {language === "en" ? "Demo PIN:" : "PIN ya Majaji:"} <span className="text-lg font-bold text-white">2026</span>
@@ -356,7 +365,6 @@ export default function DashboardPage() {
             </h2>
             
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
-              {/* Search Input */}
               <div className="relative w-full sm:w-80">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <Search className="h-5 w-5 text-slate-400" />
@@ -370,7 +378,6 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* Timeframe Select Dropdown */}
               <div className="relative w-full sm:w-48">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <Calendar className="h-4 w-4 text-slate-500" />
@@ -443,7 +450,8 @@ export default function DashboardPage() {
                           return (
                             <div key={report.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                               <div>
-                                <h4 className="font-bold text-slate-800">{report.pollutionType}</h4>
+                                <h4 className="font-bold text-slate-800">{getPollutionTitle(report)}</h4>
+                                
                                 <div className="mt-1 flex items-center gap-3 text-xs font-medium text-slate-500">
                                   <span className={`px-2 py-1 rounded-md ${report.predictedAQI > 150 ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}>
                                     AQI {report.predictedAQI}
@@ -458,7 +466,6 @@ export default function DashboardPage() {
                               </div>
 
                               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
-                                {/* DELETE BUTTON */}
                                 <button 
                                   onClick={() => handleDelete(report.id)}
                                   disabled={isProcessingDelete}
@@ -468,7 +475,6 @@ export default function DashboardPage() {
                                   {isProcessingDelete ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                                 </button>
 
-                                {/* DISPATCH/REVOKE BUTTON */}
                                 {isResolved ? (
                                   <button 
                                     onClick={() => handleIndividualAction(report.id, "revoke")}
@@ -538,7 +544,6 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-
       </section>
     </main>
   );

@@ -185,6 +185,7 @@ export function Navbar() {
     { href: "/analysis", label: language === "en" ? "AI Analysis" : "Uchanganuzi wa AI" },
     { href: "/dashboard", label: language === "en" ? "Dashboard" : "Dashibodi" },
     { href: "/map", label: language === "en" ? "Map" : "Ramani" },
+    { href: "/assistant", label: language === "en" ? "Assistant" : "Msaidizi" },
   ];
 
   return (
