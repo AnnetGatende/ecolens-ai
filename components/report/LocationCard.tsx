@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MapPin } from "lucide-react";
-import { reverseGeocode } from "@/lib/geocode";
+import { reverseGeocode } from "@/lib/geocoding";
 import { useLanguage } from "@/components/LanguageContext";
 
 type Props = {
