@@ -55,7 +55,6 @@ export default function ClusterPopup({ hotspot, onClose }: Props) {
     return severity;
   };
 
-  // --- STRICT DB TITLE LOGIC ---
   const getPollutionTitle = (report: Report) => {
     if (language === "sw") {
       return report.pollutionType_sw || report.pollutionType;
@@ -66,12 +65,12 @@ export default function ClusterPopup({ hotspot, onClose }: Props) {
   return (
     <Rnd
       default={{
-        x: 30, 
+        x: 10, 
         y: 80,
-        width: 410,
+        width: 350, // slightly narrower default for better mobile fit
         height: "auto",
       }}
-      minWidth={340}
+      minWidth={320}
       maxWidth={480}
       bounds="parent"
       dragHandleClassName="drag-handle" 
@@ -79,8 +78,10 @@ export default function ClusterPopup({ hotspot, onClose }: Props) {
       className="z-50 shadow-2xl rounded-2xl bg-white/95 backdrop-blur-md border border-gray-200 overflow-hidden"
     >
       <div className="w-full p-4">
-        <div className="drag-handle mb-4 border-b pb-3 cursor-grab active:cursor-grabbing select-none flex items-start justify-between">
-          <div className="flex-1 pr-2">
+        {/* FIXED: The close button is now isolated from the drag-handle */}
+        <div className="mb-4 border-b pb-3 flex items-start justify-between">
+          
+          <div className="drag-handle flex-1 pr-2 cursor-grab active:cursor-grabbing select-none">
             <div className="flex items-center gap-1.5 text-xs text-gray-400 font-semibold mb-1">
               <GripHorizontal size={16} className="text-gray-400 shrink-0" />
               <span>{language === "en" ? "Drag to Move" : "Sogeza Hapa"}</span>
@@ -98,10 +99,11 @@ export default function ClusterPopup({ hotspot, onClose }: Props) {
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition"
+            onTouchStart={(e) => e.stopPropagation()} // Prevents the drag library from stealing the tap
+            className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-800 transition-colors z-50 relative"
             title={language === "en" ? "Close" : "Funga"}
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 

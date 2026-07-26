@@ -13,6 +13,7 @@ import { useLanguage } from "@/components/LanguageContext";
 
 type Report = {
   id: string;
+  reportNumber: number; // ADDED: For numeric searching
   pollutionType: string;
   severity: string;
   predictedAQI: number;
@@ -36,7 +37,6 @@ type Hotspot = {
   reports: Report[];
 };
 
-// Added severity tracking to the cluster properties
 type CustomClusterProperties = {
   total_reports: number; 
   max_severity: string;
@@ -83,6 +83,8 @@ export default function MapView() {
 
   const filteredReports = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
+    // ADDED: Extracts only the digits for exact report number matching
+    const numericQuery = query.replace(/\D/g, ""); 
     const now = new Date();
 
     return reports.filter((report) => {
@@ -90,7 +92,9 @@ export default function MapView() {
         !query ||
         report.pollutionType.toLowerCase().includes(query) ||
         (report.displayLocation && report.displayLocation.toLowerCase().includes(query)) ||
-        (report.area && report.area.toLowerCase().includes(query));
+        (report.area && report.area.toLowerCase().includes(query)) ||
+        // Check if the extracted number exactly matches the report's DB number
+        (report.reportNumber && numericQuery && report.reportNumber.toString() === numericQuery); 
 
       const reportDate = new Date(report.createdAt);
       let matchTimeframe = true;
@@ -112,12 +116,10 @@ export default function MapView() {
     });
   }, [reports, searchQuery, timeframe]);
 
-  // FIXED: Group only if they share EXACT same lat/lon so they separate properly when zooming
   const hotspots = useMemo(() => {
     const map = new Map<string, { latSum: number; lonSum: number; reports: Report[]; displayLocation: string }>();
 
     filteredReports.forEach((report) => {
-      // Use coordinates as the unique key, not the display location string
       const key = `${report.latitude}-${report.longitude}`;
       const displayName = report.displayLocation || (language === "en" ? "Unknown Location" : "Eneo Lisilojulikana");
 
@@ -154,10 +156,9 @@ export default function MapView() {
     });
   }, [filteredReports, language]);
 
-  // FIXED: Supercluster now maps and reduces severity so parent clusters get colored correctly
   const supercluster = useMemo(() => {
     const sc = new Supercluster<Hotspot, CustomClusterProperties>({
-      radius: 50, // Slightly smaller radius to help them split earlier
+      radius: 50,
       maxZoom: 20,
       map: (props) => {
         const weight = severityWeights[props.severity?.toLowerCase()] || 1;
@@ -169,7 +170,6 @@ export default function MapView() {
       },
       reduce: (acc, props) => {
         acc.total_reports += props.total_reports;
-        // If a child point has a higher severity, the parent cluster takes that severity
         if (props.max_weight > acc.max_weight) {
           acc.max_weight = props.max_weight;
           acc.max_severity = props.max_severity;
@@ -220,9 +220,9 @@ export default function MapView() {
     e.stopPropagation(); 
 
     const currentZoom = Math.round(viewState.zoom);
-    const expansionZoom = Math.min(supercluster.getClusterExpansionZoom(clusterId), 20);
+    const expansionZoom = Math.min(supercluster.getClusterExpansionZoom(clusterId), 18);
 
-    if (expansionZoom > currentZoom) {
+    if (expansionZoom > currentZoom && currentZoom < 18) {
       mapRef.current?.flyTo({ center: [longitude, latitude], zoom: expansionZoom, duration: 700 });
     } else {
       const leaves = supercluster.getLeaves(clusterId, Infinity);
@@ -253,7 +253,6 @@ export default function MapView() {
   return (
     <div className="relative h-[700px] overflow-hidden rounded-3xl shadow-xl border border-gray-200 bg-slate-50">
       
-      {/* FLOATING MAP SEARCH & TIMEFRAME BAR */}
       <div className="absolute top-4 left-4 z-10 flex flex-col sm:flex-row items-center gap-2 w-full max-w-xs sm:max-w-md">
         <div className="relative shadow-lg rounded-xl w-full">
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -261,7 +260,8 @@ export default function MapView() {
           </div>
           <input
             type="text"
-            placeholder={language === "en" ? "Search location or hazard..." : "Tafuta eneo au hatari..."}
+            // ADDED: Updated placeholder to indicate Report Number searching
+            placeholder={language === "en" ? "Search Report #, Location..." : "Tafuta Nambari, Eneo..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="block w-full rounded-xl border border-white/20 bg-white/90 backdrop-blur-md py-3 pl-9 pr-3 text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 sm:text-xs font-medium"
@@ -295,8 +295,43 @@ export default function MapView() {
         {...viewState}
         onMove={handleMove}
         onLoad={handleMapLoad}
-        mapStyle="https://tiles.openfreemap.org/styles/bright"
-        maxZoom={20}
+        mapStyle={{
+          version: 8,
+          sources: {
+            "satellite-imagery": {
+              type: "raster",
+              tiles: [
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              ],
+              tileSize: 256,
+              attribution: "Esri"
+            },
+            "satellite-labels": {
+              type: "raster",
+              tiles: [
+                "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+              ],
+              tileSize: 256
+            }
+          },
+          layers: [
+            {
+              id: "satellite-layer",
+              type: "raster",
+              source: "satellite-imagery",
+              minzoom: 0,
+              maxzoom: 19
+            },
+            {
+              id: "labels-layer",
+              type: "raster",
+              source: "satellite-labels",
+              minzoom: 0,
+              maxzoom: 19
+            }
+          ]
+        }}
+        maxZoom={18} 
       >
         <NavigationControl position="top-right" />
         <FullscreenControl position="top-right" />
@@ -310,7 +345,6 @@ export default function MapView() {
             const reportCount = clusterProps.total_reports;
             const size = 32 + (reportCount / (reports.length || 1)) * 40;
             
-            // FIXED: Apply the severity color to the main cluster bubble
             const clusterColor = getMarkerColor(clusterProps.max_severity || "Low");
 
             return (

@@ -11,6 +11,7 @@ import { useLanguage } from "@/components/LanguageContext";
 
 type Report = {
   id: string;
+  reportNumber: number; // ADDED: For numeric searching
   pollutionType: string;
   pollutionType_sw?: string | null;
   severity: string;
@@ -36,12 +37,10 @@ type TimeframeOption = "ALL" | "TODAY" | "THIS_WEEK" | "THIS_MONTH";
 export default function DashboardPage() {
   const { language } = useLanguage();
 
-  // --- AUTHENTICATION STATE ---
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [pinCode, setPinCode] = useState("");
   const [authError, setAuthError] = useState(false);
 
-  // --- DASHBOARD & FILTER STATE ---
   const [reports, setReports] = useState<Report[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [timeframe, setTimeframe] = useState<TimeframeOption>("ALL");
@@ -69,7 +68,6 @@ export default function DashboardPage() {
     loadReports();
   }, [isAuthenticated]);
 
-  // --- STRICT DB TITLE LOGIC ---
   const getPollutionTitle = (report: Report) => {
     if (language === "sw") {
       return report.pollutionType_sw || report.pollutionType;
@@ -77,21 +75,22 @@ export default function DashboardPage() {
     return report.pollutionType;
   };
 
-  // --- ADVANCED FILTERING (Search + Timeframe) ---
   const filteredReports = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
+    // ADDED: Extracts only the digits for exact report number matching
+    const numericQuery = query.replace(/\D/g, ""); 
     const now = new Date();
 
     return reports.filter((report) => {
-      // 1. Text Search Filter (Checks Swahili titles too!)
       const matchSearch =
         !query ||
         report.id.toLowerCase().includes(query) ||
         report.pollutionType.toLowerCase().includes(query) ||
         (report.pollutionType_sw && report.pollutionType_sw.toLowerCase().includes(query)) ||
-        (report.displayLocation?.toLowerCase() || "").includes(query);
+        (report.displayLocation?.toLowerCase() || "").includes(query) ||
+        // Check if the extracted number exactly matches the report's DB number
+        (report.reportNumber && numericQuery && report.reportNumber.toString() === numericQuery);
 
-      // 2. Timeframe Filter
       const reportDate = new Date(report.createdAt);
       let matchTimeframe = true;
 
@@ -112,7 +111,6 @@ export default function DashboardPage() {
     });
   }, [reports, searchQuery, timeframe]);
 
-  // --- HOTSPOT GROUPING ---
   const hotspotGroups = useMemo(() => {
     const map = new Map<string, HotspotGroup>();
 
@@ -149,7 +147,6 @@ export default function DashboardPage() {
     return Array.from(map.values()).sort((a, b) => b.maxAQI - a.maxAQI);
   }, [filteredReports, language]);
 
-  // Dynamic Metrics
   const activeIncidents = filteredReports.filter(r => r.status !== "RESOLVED").length;
   const criticalSpikes = filteredReports.filter(r => r.predictedAQI > 150 && r.status !== "RESOLVED").length;
   const resourcesDeployed = filteredReports.filter(r => r.status === "RESOLVED").length;
@@ -184,7 +181,6 @@ export default function DashboardPage() {
     }
   };
 
-  // --- DELETE FUNCTIONALITY ---
   const handleDelete = async (reportId: string) => {
     const confirmMessage = language === "en" 
       ? "Are you sure you want to delete this report? This action cannot be undone."
@@ -334,7 +330,6 @@ export default function DashboardPage() {
           </button>
         </div>
 
-        {/* Refined Metrics Row */}
         <div className="mb-10 grid gap-6 sm:grid-cols-3">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
             <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
@@ -356,7 +351,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Search Bar & Date Filter Controls */}
         <div className="mb-10">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -371,7 +365,8 @@ export default function DashboardPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder={language === "en" ? "Search ID, Location, or Hazard..." : "Tafuta Kitambulisho, Eneo, au Hatari..."}
+                  // ADDED: Updated placeholder to indicate Report Number searching
+                  placeholder={language === "en" ? "Search Report #, Location..." : "Tafuta Nambari, Eneo..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="block w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-slate-900 placeholder-slate-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 sm:text-sm font-medium"
@@ -461,7 +456,8 @@ export default function DashboardPage() {
                                       language === "en" ? "en-GB" : "sw-KE"
                                     )}
                                   </span>
-                                  <span className="text-slate-400">ID: {report.id.slice(0,8)}...</span>
+                                  {/* ADDED: Show the nice Report # here on the dashboard! */}
+                                  <span className="text-slate-400">Report #{report.reportNumber}</span>
                                 </div>
                               </div>
 
