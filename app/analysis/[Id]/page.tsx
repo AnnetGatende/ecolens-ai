@@ -83,28 +83,33 @@ export default function AnalysisPage() {
     }
   }, [Id]);
 
-  // --- MODERN & STABLE PDF GENERATOR ---
+  // --- MODERN & STABLE PDF GENERATOR (MOBILE FIXED) ---
   const handleDownloadPdf = async () => {
     if (!contentRef.current || !report) return;
     setDownloading(true);
     
     try {
-      // html-to-image handles SVGs and modern CSS (like lab colors) perfectly
+      // Force mobile browsers to capture the entire scrollable height
       const dataUrl = await toPng(contentRef.current, {
         quality: 1,
-        pixelRatio: 2, // High resolution for the PDF
-        backgroundColor: '#f8fafc', // Ensures the PDF has the slate-50 background
+        pixelRatio: 2, 
+        backgroundColor: '#f8fafc',
+        height: contentRef.current.scrollHeight, // Fix for mobile cut-off
+        style: {
+          overflow: "visible",
+          maxHeight: "none",
+          height: `${contentRef.current.scrollHeight}px`,
+        },
       });
 
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (contentRef.current.offsetHeight * pdfWidth) / contentRef.current.offsetWidth;
+      const pdfHeight = (contentRef.current.scrollHeight * pdfWidth) / contentRef.current.offsetWidth;
       
       pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`EcoLens_Report_${report.reportNumber || report.id.substring(0,6)}.pdf`);
     } catch (error) {
       console.error("PDF generation failed:", error);
-      // Wrapped in setTimeout so the button stops spinning before the alert blocks the screen
       setTimeout(() => alert(language === "en" ? "Failed to download PDF." : "Imeshindwa kupakua PDF."), 100);
     } finally {
       setDownloading(false);
