@@ -8,6 +8,16 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// NEW: Admin Profile Tracking (Bilingual)
+model AdminProfile {
+  id          String   @id @default(uuid())
+  name        String
+  role        String   // English role (e.g., "Municipal Dispatcher")
+  role_sw     String?  // Swahili translated role (e.g., "Msambazaji wa Manispaa")
+  initials    String
+  createdAt   DateTime @default(now())
+}
+
 model PollutionReport {
   id                String   @id @default(cuid())
   reportNumber      Int      @default(autoincrement()) // Generates 1, 2, 3... natively

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { toPng } from "html-to-image";
@@ -51,7 +51,9 @@ type Report = {
 
 export default function AnalysisPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const Id = params.Id as string;
+  const isAdmin = searchParams.get("admin") === "true";
   const { language } = useLanguage(); 
 
   const [report, setReport] = useState<Report | null>(null);
@@ -157,28 +159,39 @@ export default function AnalysisPage() {
     <main className="mx-auto max-w-7xl space-y-8 px-6 py-12">
       
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <Link
-          href="/analysis"
-          className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-100"
-        >
-          <ArrowLeft size={18} />
-          {language === "en" ? "Back to Analysis Center" : "Rudi kwenye Kituo cha Uchanganuzi"}
-        </Link>
+        
+        {/* Render Back Button ONLY for Public Users */}
+        {!isAdmin ? (
+          <Link
+            href="/analysis"
+            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-medium text-gray-700 transition hover:bg-gray-100"
+          >
+            <ArrowLeft size={18} />
+            {language === "en" ? "Back to Analysis Center" : "Rudi kwenye Kituo cha Uchanganuzi"}
+          </Link>
+        ) : (
+          <div></div> // Empty div to maintain flex spacing when back button is hidden
+        )}
 
         <h1 className="text-xl font-bold text-slate-800">
           {language === "en" ? `Incident Report #${report.reportNumber || 'N/A'}` : `Ripoti ya Tukio #${report.reportNumber || 'N/A'}`}
         </h1>
 
-        <button
-          onClick={handleDownloadPdf}
-          disabled={downloading}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-70"
-        >
-          {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-          {downloading 
-            ? (language === "en" ? "Generating PDF..." : "Inatengeneza PDF...") 
-            : (language === "en" ? "Download Official Report" : "Pakua Ripoti Rasmi")}
-        </button>
+        {/* Render Download Button ONLY for Admins */}
+        {isAdmin ? (
+          <button
+            onClick={handleDownloadPdf}
+            disabled={downloading}
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-70"
+          >
+            {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+            {downloading 
+              ? (language === "en" ? "Generating PDF..." : "Inatengeneza PDF...") 
+              : (language === "en" ? "Download Official Report" : "Pakua Ripoti Rasmi")}
+          </button>
+        ) : (
+          <div></div> // Empty div to maintain flex spacing
+        )}
       </div>
 
       <div 

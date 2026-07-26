@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu, Shield } from "lucide-react";
 
 import LanguageToggle from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageContext";
-
-
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -33,6 +31,8 @@ type NavLinkProps = {
   pathname: string;
   onNavigate?: () => void;
   className?: string;
+  icon?: React.ElementType; 
+  tooltip?: string; 
 };
 
 function NavLink({
@@ -41,6 +41,8 @@ function NavLink({
   pathname,
   onNavigate,
   className,
+  icon: Icon,
+  tooltip,
 }: NavLinkProps) {
   const isActive = isActivePath(pathname, href);
 
@@ -48,15 +50,17 @@ function NavLink({
     <Link
       href={href}
       onClick={onNavigate}
+      title={tooltip} // This creates the hover text!
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
         isActive
           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
         className
       )}
     >
+      {Icon && <Icon size={16} className={isActive ? "text-emerald-600" : "text-slate-400"} />}
       {label}
     </Link>
   );
@@ -90,7 +94,7 @@ function ReportIncidentButton({
 
 type DesktopNavProps = {
   pathname: string;
-  links: { href: string; label: string }[];
+  links: { href: string; label: string; icon?: React.ElementType; tooltip?: string }[];
 };
 
 function DesktopNav({ pathname, links }: DesktopNavProps) {
@@ -108,7 +112,7 @@ function DesktopNav({ pathname, links }: DesktopNavProps) {
 
 type MobileNavProps = {
   pathname: string;
-  links: { href: string; label: string }[];
+  links: { href: string; label: string; icon?: React.ElementType; tooltip?: string }[];
   language: string;
 };
 
@@ -154,9 +158,6 @@ function MobileNav({ pathname, links, language }: MobileNavProps) {
         
         {/* Mobile Action Buttons */}
         <div className="mt-auto border-t border-slate-100 p-4 flex flex-col gap-4 dark:border-slate-800">
-          
-          
-
           <div className="flex items-center justify-between px-2">
             <span className="text-sm font-medium text-slate-600 dark:text-slate-300">
               {language === "en" ? "Language" : "Lugha"}
@@ -179,13 +180,25 @@ export function Navbar() {
   const pathname = usePathname();
   const { language } = useLanguage();
 
+  // Hide the public navbar on admin and dashboard routes
+  if (pathname.startsWith("/admin") || pathname.startsWith("/dashboard")) {
+    return null;
+  }
+
   const navLinks = [
     { href: "/", label: language === "en" ? "Home" : "Mwanzo" },
     { href: "/report", label: language === "en" ? "Report Pollution" : "Ripoti Uchafuzi" },
     { href: "/analysis", label: language === "en" ? "AI Analysis" : "Uchanganuzi wa AI" },
-    { href: "/dashboard", label: language === "en" ? "Dashboard" : "Dashibodi" },
     { href: "/map", label: language === "en" ? "Map" : "Ramani" },
     { href: "/assistant", label: language === "en" ? "Assistant" : "Msaidizi" },
+    
+    // --- ADDED: The secure Admin Dashboard link with an Icon and Tooltip ---
+    { 
+      href: "/dashboard", 
+      label: language === "en" ? "Admin Dashboard" : "Dashibodi ya Admin",
+      icon: Shield,
+      tooltip: language === "en" ? "Enter Admin Dashboard" : "Ingia Dashibodi ya Admin"
+    },
   ];
 
   return (
@@ -203,13 +216,9 @@ export function Navbar() {
 
         {/* Desktop Action Area */}
         <div className="flex items-center gap-3">
-          
-          {/* Grouped Theme and Language toggles together on Desktop */}
           <div className="hidden sm:flex items-center gap-2">
-            
             <LanguageToggle />
           </div>
-          
           <ReportIncidentButton className="hidden sm:inline-flex" language={language} />
           <MobileNav pathname={pathname} links={navLinks} language={language} />
         </div>
