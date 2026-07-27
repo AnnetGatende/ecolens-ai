@@ -85,60 +85,59 @@ export default function AnalysisPage() {
     }
   }, [Id]);
 
-  // --- MODERN & STABLE PDF GENERATOR (MOBILE FULL-HEIGHT FIX) ---
+  // --- BULLETPROOF MOBILE PDF GENERATOR ---
   const handleDownloadPdf = async () => {
     if (!contentRef.current || !report) return;
     setDownloading(true);
     
-    const ele = contentRef.current;
-    
-    // 1. Save original scroll position and styles
-    const originalScrollY = window.scrollY;
-    const originalStyles = {
-      height: ele.style.height,
-      overflow: ele.style.overflow,
-    };
-
     try {
-      // 2. Scroll to top to prevent rendering cut-offs on mobile
-      window.scrollTo(0, 0);
+      const ele = contentRef.current;
+      
+      // 1. Get exact absolute dimensions
+      const width = ele.scrollWidth;
+      const height = ele.scrollHeight;
 
-      // 3. Force the container to expand to its absolute full height
-      ele.style.height = `${ele.scrollHeight}px`;
-      ele.style.overflow = "visible";
+      // 2. Clone the element to bypass ALL parent scroll/overflow limits
+      const clone = ele.cloneNode(true) as HTMLDivElement;
+      
+      // 3. Mount it securely off-screen directly on the body
+      clone.style.position = 'fixed';
+      clone.style.top = '0px';
+      clone.style.left = '-9999px'; // Hide off-screen so user doesn't see it
+      clone.style.width = `${width}px`;
+      clone.style.height = `${height}px`;
+      clone.style.overflow = 'visible';
+      clone.style.zIndex = '-1';
+      document.body.appendChild(clone);
 
-      // Allow a brief 100ms moment for the DOM to recalculate layouts
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // 4. iOS Safari Memory Crash Fix: Lower pixel ratio for mobile screens
+      const isMobile = window.innerWidth < 768;
 
-      // 4. Capture the image using explicitly calculated dimensions
-      const dataUrl = await toPng(ele, {
+      // 5. Generate image from the unconstrained clone
+      const dataUrl = await toPng(clone, {
         quality: 1,
-        pixelRatio: 2, 
+        pixelRatio: isMobile ? 1 : 2, // Crucial: Prevents mobile browser canvas crash
         backgroundColor: '#f8fafc',
-        width: ele.scrollWidth,
-        height: ele.scrollHeight, 
-        style: {
-          margin: '0',
-          transform: 'none', // Prevents CSS scaling issues
-        },
+        width: width,
+        height: height,
+        cacheBust: true, // Crucial: Forces mobile to load images properly
       });
 
-      // 5. Generate the PDF based on the captured aspect ratio
+      // 6. Cleanup clone instantly
+      document.body.removeChild(clone);
+
+      // 7. Build and Save PDF
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (ele.scrollHeight * pdfWidth) / ele.scrollWidth;
+      const pdfHeight = (height * pdfWidth) / width;
       
       pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`EcoLens_Report_${report.reportNumber || report.id.substring(0,6)}.pdf`);
       
     } catch (error) {
       console.error("PDF generation failed:", error);
-      setTimeout(() => alert(language === "en" ? "Failed to download PDF." : "Imeshindwa kupakua PDF."), 100);
+      setTimeout(() => alert(language === "en" ? "Failed to download PDF. Please try again." : "Imeshindwa kupakua PDF."), 100);
     } finally {
-      // 6. Instantly restore original styles and scroll position
-      ele.style.height = originalStyles.height;
-      ele.style.overflow = originalStyles.overflow;
-      window.scrollTo(0, originalScrollY);
       setDownloading(false);
     }
   };
