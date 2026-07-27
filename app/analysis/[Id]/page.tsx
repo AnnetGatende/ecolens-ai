@@ -85,35 +85,60 @@ export default function AnalysisPage() {
     }
   }, [Id]);
 
-  // --- MODERN & STABLE PDF GENERATOR (MOBILE FIXED) ---
+  // --- MODERN & STABLE PDF GENERATOR (MOBILE FULL-HEIGHT FIX) ---
   const handleDownloadPdf = async () => {
     if (!contentRef.current || !report) return;
     setDownloading(true);
     
+    const ele = contentRef.current;
+    
+    // 1. Save original scroll position and styles
+    const originalScrollY = window.scrollY;
+    const originalStyles = {
+      height: ele.style.height,
+      overflow: ele.style.overflow,
+    };
+
     try {
-      // Force mobile browsers to capture the entire scrollable height
-      const dataUrl = await toPng(contentRef.current, {
+      // 2. Scroll to top to prevent rendering cut-offs on mobile
+      window.scrollTo(0, 0);
+
+      // 3. Force the container to expand to its absolute full height
+      ele.style.height = `${ele.scrollHeight}px`;
+      ele.style.overflow = "visible";
+
+      // Allow a brief 100ms moment for the DOM to recalculate layouts
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 4. Capture the image using explicitly calculated dimensions
+      const dataUrl = await toPng(ele, {
         quality: 1,
         pixelRatio: 2, 
         backgroundColor: '#f8fafc',
-        height: contentRef.current.scrollHeight, // Fix for mobile cut-off
+        width: ele.scrollWidth,
+        height: ele.scrollHeight, 
         style: {
-          overflow: "visible",
-          maxHeight: "none",
-          height: `${contentRef.current.scrollHeight}px`,
+          margin: '0',
+          transform: 'none', // Prevents CSS scaling issues
         },
       });
 
+      // 5. Generate the PDF based on the captured aspect ratio
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (contentRef.current.scrollHeight * pdfWidth) / contentRef.current.offsetWidth;
+      const pdfHeight = (ele.scrollHeight * pdfWidth) / ele.scrollWidth;
       
       pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`EcoLens_Report_${report.reportNumber || report.id.substring(0,6)}.pdf`);
+      
     } catch (error) {
       console.error("PDF generation failed:", error);
       setTimeout(() => alert(language === "en" ? "Failed to download PDF." : "Imeshindwa kupakua PDF."), 100);
     } finally {
+      // 6. Instantly restore original styles and scroll position
+      ele.style.height = originalStyles.height;
+      ele.style.overflow = originalStyles.overflow;
+      window.scrollTo(0, originalScrollY);
       setDownloading(false);
     }
   };
