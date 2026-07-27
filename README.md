@@ -1,109 +1,149 @@
-
 # 🌿 EcoLens AI: Hyper-Local Pollution Detection & Municipal Dispatch
 
- **Build with Gemma: GDG Pwani Hackathon Entry**  
- Fusing citizen crowdsourcing with Gemma Vision and Next.js to neutralize neighborhood environmental hazards in real-time.
+**Build with Gemma: GDG Pwani Hackathon Entry**
+
+Fusing citizen crowdsourcing with Gemma Multimodal Vision and Next.js 15 to neutralize neighborhood environmental hazards in real-time.
 
 **🌐 Live Demo:** [annetdev.dpdns.org](https://annetdev.dpdns.org/) | [ecolens-ai-jade.vercel.app](https://ecolens-ai-jade.vercel.app)
 
----
+**📂 Repository:** [github.com/AnnetGatende/ecolens-ai](https://github.com/AnnetGatende/ecolens-ai)
+
+
 
 ## 💡 The Problem
 
-City-level environmental monitoring systems often fail to catch micro-pockets of severe pollution—such as illegal waste dumping, toxic industrial burning, or localized smog traps at busy junctions. Traditional municipal workflows rely on slow, manual reporting, leaving city operators blind to fast-moving ecological hazards. 
+City-level environmental monitoring systems consistently miss localized micro-pockets of severe pollution—such as illegal waste dumping, toxic tire fires, or smog traps at busy road junctions—because municipal authorities lack street-level visibility. Traditional reporting relies on slow, manual phone calls or paper logging, leaving city dispatch operators blind to fast-moving ecological hazards.
 
-A district officer in Likoni currently receives multiple isolated fire reports via phone calls with no way to prioritize, visualize, or act on them in real-time. **EcoLens AI** closes this data gap by transforming user-submitted smartphone photos into an automated, AI-verified, and actionable Computer-Aided Dispatch (CAD) system for city municipal teams equipped with full CRUD management controls.
+A district officer in Likoni might receive multiple isolated phone calls regarding smoke with no way to prioritize, visualize, or act on them in real time. **EcoLens AI** closes this data gap by transforming crowdsourced citizen evidence into an automated, AI-verified Computer-Aided Dispatch (CAD) platform equipped with full CRUD controls and predictive environmental analytics.
 
----
 
-## 🚀 Key Features
 
-*   **🤖 Gemma AI Visual Threat Analysis:** Leverages Gemma's multimodal (vision + text) capabilities to analyze citizen-uploaded images, automatically detecting hazard types, calculating severity ratings, predicting 24-hour Air Quality Index (AQI) spikes, and generating health risk advisories.
-*   **🗺️ Neighborhood Hotspot Clustering:** Uses spatial mapping and reverse-geocoding to group raw GPS coordinates into readable neighborhood sectors (e.g., "Likoni, Timbwani ward"), eliminating alert fatigue for municipal operators.
-*   **🚒 Secure Municipal Command Center:** Features a role-based protected admin gate allowing dispatchers to review incoming citizen reports, deploy water-mist cannons or cleanup crews, resolve hazards, and moderate database records using secure data deletion pipelines.
-*   **🌍 Full Bilingual Support (English & Swahili):** Built from the ground up for Mombasa's local community. Gemma generates its environmental summaries and advisories dynamically, supported by frontend dictionary mapping for UI components and confirmation dialogs. 
-*   **📊 Live Status Tracking:** Citizens and city officials can track hazard status from *Reported* → *Dispatched* → *Resolved* with instant state updates.
-*   **📡 Multi-Source Data Fusion:** Combines citizen-uploaded visual evidence with OpenAQ sensor readings and Sentinel-2 satellite imagery references for comprehensive environmental intelligence.
+## 🚀 Key Features & EcoLens Command OS
 
----
+* 🤖 **Gemma Multimodal AI Engine:** Processes citizen-uploaded photos and descriptions to automatically classify pollution types, assess severity, calculate confidence scores, predict 24-hour Air Quality Index (AQI) spikes, and generate municipal action recommendations.
+* 🛡️ **Manual Review Queue (<85% AI Confidence Firewall):** Acts as a safety layer for municipal operators. Reports where Gemma's AI confidence score falls below 85% are automatically held in a quarantine queue for admin review before being published to the public transparency map.
+* 🗺️ **Embedded Live Command Map:** Integrates an interactive spatial monitoring view directly inside the admin dashboard (`/map?admin=true`), giving operators instant visual awareness of active municipal hot zones.
+* 🧩 **Smart Geospatial Hotspot Clustering:** Combines Leaflet and Supercluster to aggregate raw GPS coordinates into human-readable neighborhood sectors (e.g., *"Likoni, Timbwani ward"*), eliminating alert fatigue.
+* 📊 **Analytics & Trend Telemetry:** Powered by Recharts to display live incident distributions, active unit statuses, and regional pollution trends over time.
+* 🌍 **Native Bilingual Support (English & Swahili):** Built specifically for local operators in Mombasa. Gemma natively generates parallel environmental summaries and advisories in both Swahili and English, controllable via a single UI sidebar toggle.
+* 🚒 **Precision Dispatch & Full CRUD Controls:** Enables municipal teams to deploy targeted resources (e.g., water-mist cannons, cleanup crews), recall units, edit records, or purge invalid test submissions via secure database deletion pipelines.
+* 📡 **Environment Telemetry Vault:** Diagnostic status monitor tracking server health, backend API keys, and external uplinks.
+
+
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
-| :--- | :--- |
-| **Frontend & Framework** | Next.js 15 (App Router), React, Tailwind CSS, Custom Vector Brand Assets |
-| **Artificial Intelligence** | Gemma Multimodal API (Vision & Structured JSON) |
-| **Database** | Supabase (PostgreSQL) |
+| --- | --- |
+| **Frontend & UI** | Next.js 15 (App Router), React 19, Tailwind CSS, Lucide Icons |
+| **Artificial Intelligence** | Google Gemma Multimodal API (Vision & Structured JSON) |
+| **Database & Persistence** | Supabase (PostgreSQL) |
 | **ORM** | Prisma |
-| **Geospatial & Mapping** | Leaflet, Supercluster, Reverse Geocoding |
-| **Deployment** | Vercel |
+| **Geospatial & Visualizations** | Leaflet, Supercluster, Reverse Geocoding, Recharts |
+| **Deployment** | Vercel & Custom Domain (`annetdev.dpdns.org`) |
 
----
+
 
 ## 🧠 How Gemma Powers EcoLens
 
-When a citizen uploads a pollution photo, Gemma performs a full multimodal analysis instantly:
+When a citizen submits a pollution report, Gemma acts as the core analytical brain:
 
-1. **Input:** Citizen uploads photo & description.
-2. **Analysis:** Gemma Vision processes the image context.
-3. **Output:** Returns strictly typed JSON containing:
-   * *Pollution Type* (e.g., Wildfire Smoke, Garbage Burning)
-   * *AI Confidence Score* (e.g., 98%)
-   * *Severity Level* (Low / Medium / High / Extreme)
-   * *Predicted 24-hour AQI* 
-   * *Health Risk Advisory & Municipal Recommendation*
-4. **Action:** Data is written to Supabase, mapped to the dashboard, and a municipal operator dispatches resources to the exact coordinates.
 
----
+[ Citizen Photo & Text ] 
+          │
+          ▼
+[ Gemma Multimodal AI Engine ] ──(Strict Prompt Constraints)──► [ Structured JSON Output ]
+                                                                        │
+ ┌──────────────────────────────────────────────────────────────────────┴──────────────────────────────────┐
+ │ • Hazard Classification (e.g., Toxic Waste Fire, Industrial Smog)                                       │
+ │ • AI Confidence Score (e.g., 94%)                                                                       │
+ │ • Severity Level (Low / Medium / High / Critical)                                                      │
+ │ • Predicted 24-Hour AQI Spike                                                                          │
+ │ • Municipal Action Advisory (e.g., Deploy Water-Mist Cannon)                                           │
+ │ • Native Dual-Language Summary (Parallel English & Swahili Output)                                      │
+ └─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+          │
+          ▼
+[ PostgreSQL / Supabase ] ──► [ Command OS Dashboard & Live Map ]
+
+
+
+
 
 ## 🔑 Key Engineering Decisions
 
-*   **Structured JSON from Gemma:** Rather than accepting conversational text, the system prompt is heavily engineered to force Gemma into a strict analytical role, ensuring it always returns parsable JSON metrics that the frontend can render reliably.
-*   **Frontend Translation Dictionary:** To maintain database integrity while supporting a fully bilingual UI, incident categories are standardized in the database and translated client-side via a dynamic mapping function.
-*   **Smart Grid Fallback for Geospatial Clustering:** Legacy reports lacking exact neighborhood names previously grouped into a single "Unknown Sector." A coordinate grid fallback system was built to group unmapped data by localized grid cells, ensuring every incident gets its own accurate hotspot marker.
-*   **Precision Dispatch & Deletion Architecture:** Engineered API queries target precise report ID arrays and include a "Recall Unit" toggle alongside a secure admin **DELETE pipeline**, allowing operators to safely reverse dispatch mistakes or purge invalid test submissions without corrupting neighborhood data states.
+* **Strictly Structured LLM JSON Output:** To prevent unpredictable conversational output, system prompts lock Gemma into a deterministic analytical role. The backend validates and parses structured JSON metrics directly into serverless API pipelines.
+* **Native Multilingual AI Output:** Rather than using client-side translation dictionaries, EcoLens leverages Gemma's native multilingual intelligence to generate parallel English and Swahili analytical assessments during the initial inference pass, keeping database records standardized while rendering fluent local terms.
+* **Smart Grid Fallback for Unmapped Coordinates:** Unmapped legacy reports lacking ward metadata previously clumped into a single "Unknown Sector." A spatial coordinate grid fallback was engineered to group raw GPS coordinates into localized grid cells, ensuring every incident receives an accurate hotspot marker.
+* **Precision Dispatch & Cascade Deletion:** Backend API queries target precise report ID arrays within clusters. A "Recall Unit" toggle alongside an admin DELETE pipeline allows operators to safely reverse accidental dispatches or purge test submissions without corrupting neighborhood data states.
 
----
+
+
+## 🔒 Prototyping vs. Production Architecture
+
+* **Active Real Data:** Citizen image uploads, Gemma multimodal visual processing, PostgreSQL persistence, geospatial clustering, and admin lifecycle state transitions run on **100% live data**.
+* **Sensor Streams:** Environmental sensor feeds are simulated in the 1-day hackathon prototype. The backend is architected to transition seamlessly to live IoT feeds via official **OpenAQ API endpoints** and physical $PM_{2.5}$ / $PM_{10}$ sensors in production.
+* **Security & Authentication:** For hackathon testing, the admin dashboard uses a demo PIN (`2026`). In production, administrative security will be decoupled behind server-side authentication gates and role-based access control (RBAC), keeping municipal dispatch tools hidden from public view.
+
+
 
 ## 🏁 Getting Started Locally
 
-**Prerequisites:** 
+### Prerequisites
 
-Node.js (v18+) and npm installed.
+* Node.js (v18+) and npm installed.
 
-**1. Clone the Repository**
+### 1. Clone the Repository
 
-git clone [https://github.com/AnnetGatende/ecolens-ai.git](https://github.com/AnnetGatende/ecolens-ai.git)
 
+git clone https://github.com/AnnetGatende/ecolens-ai.git
 cd ecolens-ai
 
-**2. Install Dependencies**
+
+
+### 2. Install Dependencies
+
 
 npm install
 
-**3. Configure Environment Variables**
+
+
+### 3. Configure Environment Variables
 
 Create a `.env` file in the root directory:
 
+```env
 DATABASE_URL="your-supabase-postgres-connection-string"
+DIRECT_URL="your-supabase-direct-postgres-connection-string"
+GEMMA_API_KEY="your-gemma-api-key"
 
-NEXT_PUBLIC_GEMMA_API_KEY="your-gemma-api-key"
 
-**4. Run Database Migrations**
+
+### 4. Run Database Migrations
+
 
 npx prisma db push
 
-**5. Start the Development Server**
+
+
+### 5. Start the Development Server
+
 
 npm run dev
 
+
+
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+
 
 ## 🎯 Usage Guide
 
-* **Citizen View:** Navigate to the home page to see live network intelligence. Go to *Report Pollution* to upload a photo; GPS coordinates are auto-detected.
-* **Municipal Dispatch Center:** Access `/dashboard` and enter the demo PIN: `2026`. Review incoming citizen reports, expand sectors to see Gemma's AQI forecasts, deploy resources, or moderate/delete outdated test logs.
-* **AI Analysis Center:** Visit `/analysis` to see all reports with Gemma's full environmental assessments, localized into Swahili or English.
+* **Citizen View (`/`):** View the live community map. Navigate to **Report Pollution** to capture or upload a hazard photo with auto-detected GPS coordinates.
+* **Municipal Dispatch Center (`/dashboard`):** Enter the demo PIN (`2026`). Review incoming reports, inspect low-confidence submissions in the **Manual Review Queue**, view the **Live Command Map**, monitor area analytics, deploy/recall units, or purge test logs.
+* **AI Analysis Center (`/analysis`):** Inspect all environmental reports accompanied by Gemma's full AI threat assessments, localized into Swahili or English.
+
+
 
 ## 👩‍💻 Author
 
@@ -111,12 +151,13 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 Full-Stack Developer | Mombasa, Kenya
 
-GitHub: [@AnnetGatende](https://github.com/AnnetGatende)
+* **GitHub:** [@AnnetGatende](https://github.com/AnnetGatende)
+* **LinkedIn:** [Annet Gatende](https://www.linkedin.com/in/annetgatende/)
 
-LinkedIn: [Annet Gatende](https://www.linkedin.com/in/annetgatende/)
+*Built with ❤️ for the Build with Gemma: GDG Pwani Hackathon*
 
-*Built with ❤️ for the Build with Gemma: GDG Pwani Hackathon — July 31, 2026*
+
 
 ## 📄 License
 
-Licensed under the Apache License, Version 2.0 — see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
+Licensed under the [Apache License, Version 2.0](https://www.google.com/search?q=LICENSE).
