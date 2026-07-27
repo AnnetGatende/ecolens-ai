@@ -85,48 +85,61 @@ export default function AnalysisPage() {
     }
   }, [Id]);
 
-  // --- BULLETPROOF MOBILE PDF GENERATOR ---
+  // --- REPAINT-BASED MOBILE PDF GENERATOR (NO CLONING) ---
   const handleDownloadPdf = async () => {
     if (!contentRef.current || !report) return;
     setDownloading(true);
-    
+
     try {
       const ele = contentRef.current;
       
-      // 1. Get exact absolute dimensions
-      const width = ele.scrollWidth;
-      const height = ele.scrollHeight;
-
-      // 2. Clone the element to bypass ALL parent scroll/overflow limits
-      const clone = ele.cloneNode(true) as HTMLDivElement;
+      // 1. Save the user's current scroll position so we don't disorient them
+      const scrollY = window.scrollY;
       
-      // 3. Mount it securely off-screen directly on the body
-      clone.style.position = 'fixed';
-      clone.style.top = '0px';
-      clone.style.left = '-9999px'; // Hide off-screen so user doesn't see it
-      clone.style.width = `${width}px`;
-      clone.style.height = `${height}px`;
-      clone.style.overflow = 'visible';
-      clone.style.zIndex = '-1';
-      document.body.appendChild(clone);
+      // 2. Scroll to the absolute top to avoid coordinate mapping bugs in html-to-image
+      window.scrollTo(0, 0);
 
-      // 4. iOS Safari Memory Crash Fix: Lower pixel ratio for mobile screens
-      const isMobile = window.innerWidth < 768;
+      // 3. Save all original structural styles
+      const origBodyOverflow = document.body.style.overflow;
+      const origHtmlOverflow = document.documentElement.style.overflow;
+      const origHeight = ele.style.height;
+      const origOverflow = ele.style.overflow;
 
-      // 5. Generate image from the unconstrained clone
-      const dataUrl = await toPng(clone, {
+      // 4. Force the ENTIRE PAGE and the container to expand fully (removing mobile scroll clipping)
+      document.documentElement.style.overflow = "visible";
+      document.body.style.overflow = "visible";
+      ele.style.height = "auto";
+      ele.style.overflow = "visible";
+
+      // 5. Give the mobile browser 300ms to physically repaint the expanded DOM
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // 6. Capture exact dimensions of the newly expanded element
+      const width = ele.offsetWidth;
+      const height = ele.offsetHeight;
+
+      // 7. Take the snapshot
+      const dataUrl = await toPng(ele, {
         quality: 1,
-        pixelRatio: isMobile ? 1 : 2, // Crucial: Prevents mobile browser canvas crash
+        pixelRatio: window.innerWidth < 768 ? 1 : 2, // Keep memory low on mobile to prevent crashes
         backgroundColor: '#f8fafc',
         width: width,
         height: height,
-        cacheBust: true, // Crucial: Forces mobile to load images properly
+        cacheBust: true, // Forces images to load securely
+        style: {
+          transform: 'scale(1)', 
+          transformOrigin: 'top left',
+        }
       });
 
-      // 6. Cleanup clone instantly
-      document.body.removeChild(clone);
+      // 8. Instantly restore the page back to how it was before the user notices
+      ele.style.height = origHeight;
+      ele.style.overflow = origOverflow;
+      document.body.style.overflow = origBodyOverflow;
+      document.documentElement.style.overflow = origHtmlOverflow;
+      window.scrollTo(0, scrollY);
 
-      // 7. Build and Save PDF
+      // 9. Generate and save the PDF
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (height * pdfWidth) / width;
@@ -136,7 +149,7 @@ export default function AnalysisPage() {
       
     } catch (error) {
       console.error("PDF generation failed:", error);
-      setTimeout(() => alert(language === "en" ? "Failed to download PDF. Please try again." : "Imeshindwa kupakua PDF."), 100);
+      alert(language === "en" ? "Failed to download PDF. Please try again." : "Imeshindwa kupakua PDF.");
     } finally {
       setDownloading(false);
     }
@@ -194,7 +207,7 @@ export default function AnalysisPage() {
             {language === "en" ? "Back to Analysis Center" : "Rudi kwenye Kituo cha Uchanganuzi"}
           </Link>
         ) : (
-          <div></div> // Empty div to maintain flex spacing when back button is hidden
+          <div></div> 
         )}
 
         <h1 className="text-xl font-bold text-slate-800">
@@ -214,7 +227,7 @@ export default function AnalysisPage() {
               : (language === "en" ? "Download Official Report" : "Pakua Ripoti Rasmi")}
           </button>
         ) : (
-          <div></div> // Empty div to maintain flex spacing
+          <div></div> 
         )}
       </div>
 
