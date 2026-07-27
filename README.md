@@ -1,22 +1,20 @@
 # 🌿 EcoLens AI: Hyper-Local Pollution Detection & Municipal Dispatch
 
-**Build with Gemma: GDG Pwani Hackathon Entry**
-
+**Build with Gemma: GDG Pwani Hackathon Entry**  
 Fusing citizen crowdsourcing with Gemma Multimodal Vision and Next.js 15 to neutralize neighborhood environmental hazards in real-time.
 
-**🌐 Live Demo:** [annetdev.dpdns.org](https://annetdev.dpdns.org/) | [ecolens-ai-jade.vercel.app](https://ecolens-ai-jade.vercel.app)
-
+**🌐 Live Demo:** [annetdev.dpdns.org](https://annetdev.dpdns.org/) | [ecolens-ai-jade.vercel.app](https://ecolens-ai-jade.vercel.app)  
 **📂 Repository:** [github.com/AnnetGatende/ecolens-ai](https://github.com/AnnetGatende/ecolens-ai)
 
-
+---
 
 ## 💡 The Problem
 
-City-level environmental monitoring systems consistently miss localized micro-pockets of severe pollution—such as illegal waste dumping, toxic tire fires, or smog traps at busy road junctions—because municipal authorities lack street-level visibility. Traditional reporting relies on slow, manual phone calls or paper logging, leaving city dispatch operators blind to fast-moving ecological hazards.
+City-level environmental monitoring systems consistently miss localized micro-pockets of severe pollution—such as illegal waste dumping, toxic tire fires, or smog traps at busy road junctions—because municipal authorities lack street-level visibility. Traditional reporting relies on slow, manual phone calls or paper logging, leaving city dispatch operators blind to fast-moving ecological hazards. 
 
 A district officer in Likoni might receive multiple isolated phone calls regarding smoke with no way to prioritize, visualize, or act on them in real time. **EcoLens AI** closes this data gap by transforming crowdsourced citizen evidence into an automated, AI-verified Computer-Aided Dispatch (CAD) platform equipped with full CRUD controls and predictive environmental analytics.
 
-
+---
 
 ## 🚀 Key Features & EcoLens Command OS
 
@@ -29,12 +27,12 @@ A district officer in Likoni might receive multiple isolated phone calls regardi
 * 🚒 **Precision Dispatch & Full CRUD Controls:** Enables municipal teams to deploy targeted resources (e.g., water-mist cannons, cleanup crews), recall units, edit records, or purge invalid test submissions via secure database deletion pipelines.
 * 📡 **Environment Telemetry Vault:** Diagnostic status monitor tracking server health, backend API keys, and external uplinks.
 
-
+---
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
-| --- | --- |
+| :--- | :--- |
 | **Frontend & UI** | Next.js 15 (App Router), React 19, Tailwind CSS, Lucide Icons |
 | **Artificial Intelligence** | Google Gemma Multimodal API (Vision & Structured JSON) |
 | **Database & Persistence** | Supabase (PostgreSQL) |
@@ -42,33 +40,35 @@ A district officer in Likoni might receive multiple isolated phone calls regardi
 | **Geospatial & Visualizations** | Leaflet, Supercluster, Reverse Geocoding, Recharts |
 | **Deployment** | Vercel & Custom Domain (`annetdev.dpdns.org`) |
 
-
+---
 
 ## 🧠 How Gemma Powers EcoLens
 
 When a citizen submits a pollution report, Gemma acts as the core analytical brain:
 
 
-[ Citizen Photo & Text ] 
-          │
-          ▼
+```
+
+[ Citizen Photo & Text ]
+│
+▼
 [ Gemma Multimodal AI Engine ] ──(Strict Prompt Constraints)──► [ Structured JSON Output ]
-                                                                        │
- ┌──────────────────────────────────────────────────────────────────────┴──────────────────────────────────┐
- │ • Hazard Classification (e.g., Toxic Waste Fire, Industrial Smog)                                       │
- │ • AI Confidence Score (e.g., 94%)                                                                       │
- │ • Severity Level (Low / Medium / High / Critical)                                                      │
- │ • Predicted 24-Hour AQI Spike                                                                          │
- │ • Municipal Action Advisory (e.g., Deploy Water-Mist Cannon)                                           │
- │ • Native Dual-Language Summary (Parallel English & Swahili Output)                                      │
- └─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-          │
-          ▼
+│
+┌──────────────────────────────────────────────────────────────────────┴──────────────────────────────────┐
+│ • Hazard Classification (e.g., Toxic Waste Fire, Industrial Smog)                                       │
+│ • AI Confidence Score (e.g., 94%)                                                                       │
+│ • Severity Level (Low / Medium / High / Critical)                                                      │
+│ • Predicted 24-Hour AQI Spike                                                                          │
+│ • Municipal Action Advisory (e.g., Deploy Water-Mist Cannon)                                           │
+│ • Native Dual-Language Summary (Parallel English & Swahili Output)                                      │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+│
+▼
 [ PostgreSQL / Supabase ] ──► [ Command OS Dashboard & Live Map ]
 
+```
 
-
-
+---
 
 ## 🔑 Key Engineering Decisions
 
@@ -77,36 +77,34 @@ When a citizen submits a pollution report, Gemma acts as the core analytical bra
 * **Smart Grid Fallback for Unmapped Coordinates:** Unmapped legacy reports lacking ward metadata previously clumped into a single "Unknown Sector." A spatial coordinate grid fallback was engineered to group raw GPS coordinates into localized grid cells, ensuring every incident receives an accurate hotspot marker.
 * **Precision Dispatch & Cascade Deletion:** Backend API queries target precise report ID arrays within clusters. A "Recall Unit" toggle alongside an admin DELETE pipeline allows operators to safely reverse accidental dispatches or purge test submissions without corrupting neighborhood data states.
 
-
+---
 
 ## 🔒 Prototyping vs. Production Architecture
 
 * **Active Real Data:** Citizen image uploads, Gemma multimodal visual processing, PostgreSQL persistence, geospatial clustering, and admin lifecycle state transitions run on **100% live data**.
-* **Sensor Streams:** Environmental sensor feeds are simulated in the 1-day hackathon prototype. The backend is architected to transition seamlessly to live IoT feeds via official **OpenAQ API endpoints** and physical $PM_{2.5}$ / $PM_{10}$ sensors in production.
+* **Sensor Streams:** Environmental sensor feeds are simulated in the 1-day hackathon prototype. The backend is architected to transition seamlessly to live IoT feeds via official **OpenAQ API endpoints** and physical PM2.5 / PM10 sensors in production.
 * **Security & Authentication:** For hackathon testing, the admin dashboard uses a demo PIN (`2026`). In production, administrative security will be decoupled behind server-side authentication gates and role-based access control (RBAC), keeping municipal dispatch tools hidden from public view.
 
-
+---
 
 ## 🏁 Getting Started Locally
 
 ### Prerequisites
-
 * Node.js (v18+) and npm installed.
 
 ### 1. Clone the Repository
-
-
-git clone https://github.com/AnnetGatende/ecolens-ai.git
+```bash
+git clone [https://github.com/AnnetGatende/ecolens-ai.git](https://github.com/AnnetGatende/ecolens-ai.git)
 cd ecolens-ai
 
-
+```
 
 ### 2. Install Dependencies
 
-
+```bash
 npm install
 
-
+```
 
 ### 3. Configure Environment Variables
 
@@ -117,25 +115,25 @@ DATABASE_URL="your-supabase-postgres-connection-string"
 DIRECT_URL="your-supabase-direct-postgres-connection-string"
 GEMMA_API_KEY="your-gemma-api-key"
 
-
+```
 
 ### 4. Run Database Migrations
 
-
+```bash
 npx prisma db push
 
-
+```
 
 ### 5. Start the Development Server
 
-
+```bash
 npm run dev
 
-
+```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-
+---
 
 ## 🎯 Usage Guide
 
@@ -143,7 +141,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 * **Municipal Dispatch Center (`/dashboard`):** Enter the demo PIN (`2026`). Review incoming reports, inspect low-confidence submissions in the **Manual Review Queue**, view the **Live Command Map**, monitor area analytics, deploy/recall units, or purge test logs.
 * **AI Analysis Center (`/analysis`):** Inspect all environmental reports accompanied by Gemma's full AI threat assessments, localized into Swahili or English.
 
-
+---
 
 ## 👩‍💻 Author
 
@@ -156,8 +154,12 @@ Full-Stack Developer | Mombasa, Kenya
 
 *Built with ❤️ for the Build with Gemma: GDG Pwani Hackathon*
 
-
+---
 
 ## 📄 License
 
 Licensed under the [Apache License, Version 2.0](https://www.google.com/search?q=LICENSE).
+
+```
+
+```
