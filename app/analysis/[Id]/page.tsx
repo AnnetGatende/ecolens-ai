@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Download, Loader2 } from "lucide-react";
-import { toPng } from "html-to-image";
-import jsPDF from "jspdf";
 
 import UploadedReport from "@/components/analysis/UploadedReport";
 import AIResultCard from "@/components/report/AIResultCard";
@@ -58,8 +56,6 @@ export default function AnalysisPage() {
 
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadReport() {
@@ -85,79 +81,16 @@ export default function AnalysisPage() {
     }
   }, [Id]);
 
-  // --- REPAINT-BASED MOBILE PDF GENERATOR (NO CLONING) ---
-  const handleDownloadPdf = async () => {
-    if (!contentRef.current || !report) return;
-    setDownloading(true);
-
-    try {
-      const ele = contentRef.current;
-      
-      // 1. Save the user's current scroll position so we don't disorient them
-      const scrollY = window.scrollY;
-      
-      // 2. Scroll to the absolute top to avoid coordinate mapping bugs in html-to-image
-      window.scrollTo(0, 0);
-
-      // 3. Save all original structural styles
-      const origBodyOverflow = document.body.style.overflow;
-      const origHtmlOverflow = document.documentElement.style.overflow;
-      const origHeight = ele.style.height;
-      const origOverflow = ele.style.overflow;
-
-      // 4. Force the ENTIRE PAGE and the container to expand fully (removing mobile scroll clipping)
-      document.documentElement.style.overflow = "visible";
-      document.body.style.overflow = "visible";
-      ele.style.height = "auto";
-      ele.style.overflow = "visible";
-
-      // 5. Give the mobile browser 300ms to physically repaint the expanded DOM
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // 6. Capture exact dimensions of the newly expanded element
-      const width = ele.offsetWidth;
-      const height = ele.offsetHeight;
-
-      // 7. Take the snapshot
-      const dataUrl = await toPng(ele, {
-        quality: 1,
-        pixelRatio: window.innerWidth < 768 ? 1 : 2, // Keep memory low on mobile to prevent crashes
-        backgroundColor: '#f8fafc',
-        width: width,
-        height: height,
-        cacheBust: true, // Forces images to load securely
-        style: {
-          transform: 'scale(1)', 
-          transformOrigin: 'top left',
-        }
-      });
-
-      // 8. Instantly restore the page back to how it was before the user notices
-      ele.style.height = origHeight;
-      ele.style.overflow = origOverflow;
-      document.body.style.overflow = origBodyOverflow;
-      document.documentElement.style.overflow = origHtmlOverflow;
-      window.scrollTo(0, scrollY);
-
-      // 9. Generate and save the PDF
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (height * pdfWidth) / width;
-      
-      pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`EcoLens_Report_${report.reportNumber || report.id.substring(0,6)}.pdf`);
-      
-    } catch (error) {
-      console.error("PDF generation failed:", error);
-      alert(language === "en" ? "Failed to download PDF. Please try again." : "Imeshindwa kupakua PDF.");
-    } finally {
-      setDownloading(false);
-    }
+  // --- 100% RELIABLE NATIVE PDF / PRINT GENERATOR ---
+  const handleDownloadPdf = () => {
+    // This triggers the device's native "Save as PDF" dialog.
+    // It is crash-proof on mobile and creates crisp, selectable text.
+    window.print();
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 gap-4 text-xl font-medium text-emerald-700">
+      <div className="flex flex-col items-center justify-center p-20 gap-4 text-xl font-medium text-emerald-700 print:hidden">
         <Loader2 className="animate-spin w-8 h-8" />
         {language === "en" ? "Loading AI Analysis..." : "Inapakia Uchanganuzi wa AI..."}
       </div>
@@ -166,7 +99,7 @@ export default function AnalysisPage() {
 
   if (!report) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 text-center space-y-4">
+      <div className="flex flex-col items-center justify-center p-20 text-center space-y-4 print:hidden">
         <h2 className="text-2xl font-bold text-gray-800">Report not found.</h2>
         <Link
           href="/analysis"
@@ -193,11 +126,11 @@ export default function AnalysisPage() {
     : (report.description_en || report.description);
 
   return (
-    <main className="mx-auto max-w-7xl space-y-8 px-6 py-12">
+    <main className="mx-auto max-w-7xl space-y-8 px-6 py-12 print:px-0 print:py-4 print:space-y-4 print:m-0">
       
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      {/* HEADER SECTION - Hidden entirely when saving as PDF */}
+      <div className="flex flex-wrap items-center justify-between gap-4 print:hidden">
         
-        {/* Render Back Button ONLY for Public Users */}
         {!isAdmin ? (
           <Link
             href="/analysis"
@@ -214,27 +147,30 @@ export default function AnalysisPage() {
           {language === "en" ? `Incident Report #${report.reportNumber || 'N/A'}` : `Ripoti ya Tukio #${report.reportNumber || 'N/A'}`}
         </h1>
 
-        {/* Render Download Button ONLY for Admins */}
         {isAdmin ? (
           <button
             onClick={handleDownloadPdf}
-            disabled={downloading}
-            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-70"
+            className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700"
           >
-            {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-            {downloading 
-              ? (language === "en" ? "Generating PDF..." : "Inatengeneza PDF...") 
-              : (language === "en" ? "Download Official Report" : "Pakua Ripoti Rasmi")}
+            <Download size={18} />
+            {language === "en" ? "Save Official PDF" : "Pakua Ripoti Rasmi"}
           </button>
         ) : (
           <div></div> 
         )}
       </div>
 
-      <div 
-        ref={contentRef} 
-        className="space-y-8 pb-4 bg-slate-50 p-6 sm:p-10 rounded-3xl print:bg-white print:p-0"
-      >
+      {/* REPORT CONTENT - Formatted cleanly for both screen and PDF */}
+      <div className="space-y-8 bg-slate-50 p-6 sm:p-10 rounded-3xl print:space-y-6 print:bg-white print:p-0 print:rounded-none print:shadow-none border-none">
+        
+        {/* We add a print-only header so the PDF still looks official */}
+        <div className="hidden print:block border-b-2 border-emerald-600 pb-4 mb-6">
+          <h1 className="text-3xl font-black text-slate-900">EcoLens AI Command Center</h1>
+          <p className="text-slate-500 font-bold mt-1">
+            {language === "en" ? `Official Incident Report #${report.reportNumber || 'N/A'}` : `Ripoti Rasmi ya Tukio #${report.reportNumber || 'N/A'}`}
+          </p>
+        </div>
+
         <UploadedReport report={{ ...report, description: displayDescription }} />
 
         <AIResultCard
@@ -249,6 +185,11 @@ export default function AnalysisPage() {
             summary: displaySummary,                  
           }}
         />
+        
+        {/* Print-only footer */}
+        <div className="hidden print:block mt-12 pt-4 border-t border-slate-200 text-xs text-slate-400 text-center">
+          Generated automatically by EcoLens AI Neural Network | Confidence Score: {report.confidence}%
+        </div>
       </div>
       
     </main>
