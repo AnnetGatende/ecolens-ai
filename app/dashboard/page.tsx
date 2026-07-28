@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { 
   AlertTriangle, Wind, Truck, Droplets, Activity, MapPin, 
   Satellite, Radio, RotateCcw, ChevronDown, ChevronUp, Search, Calendar,
@@ -42,6 +43,7 @@ type ActiveTab = "dispatch" | "analytics" | "settings" | "map" | "report";
 
 export default function DashboardPage() {
   const { language, setLanguage } = useLanguage();
+  const router = useRouter(); // Added router for background refreshing
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("dispatch");
   const [dispatchSubTab, setDispatchSubTab] = useState<DispatchSubTab>("live");
@@ -74,7 +76,7 @@ export default function DashboardPage() {
   const changeTab = (tab: ActiveTab) => {
     setActiveTab(tab);
     localStorage.setItem("ecolens_active_tab", tab);
-    setIsMobileSidebarOpen(false); // Close mobile sidebar when a tab is clicked
+    setIsMobileSidebarOpen(false); 
   };
 
   const changeSubTab = (subTab: DispatchSubTab) => {
@@ -309,6 +311,7 @@ export default function DashboardPage() {
             return report;
           })
         );
+        router.refresh(); 
       }
     } catch (error) {
       console.error(error);
@@ -330,6 +333,7 @@ export default function DashboardPage() {
       const response = await fetch(`/api/reports/${reportId}`, { method: "DELETE" });
       if (response.ok) {
         setReports((prevReports) => prevReports.filter((report) => report.id !== reportId));
+        router.refresh(); 
       } else {
         alert(language === "en" ? "Failed to delete the report." : "Imeshindwa kufuta ripoti.");
       }
@@ -955,10 +959,10 @@ export default function DashboardPage() {
                         onClick={() => toggleGroup(group.id)}
                         className="flex cursor-pointer items-start justify-between p-4 sm:p-6 hover:bg-slate-50/50 rounded-t-3xl transition-colors"
                       >
-                        <div className="pr-4">
-                          <h3 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
-                            <MapPin size={18} className={`shrink-0 ${group.isCompletelyDispatched ? "text-emerald-500" : "text-blue-500"}`} />
-                            <span className="truncate">{group.location}</span>
+                        <div className="flex-1 min-w-0 pr-4">
+                          <h3 className="text-base sm:text-lg font-bold text-slate-800 flex items-start gap-2">
+                            <MapPin size={18} className={`shrink-0 mt-1 ${group.isCompletelyDispatched ? "text-emerald-500" : "text-blue-500"}`} />
+                            <span className="break-words whitespace-normal leading-snug">{group.location}</span>
                           </h3>
                           <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1.5 flex flex-wrap items-center gap-2">
                             <span className="bg-slate-100 px-2.5 py-0.5 rounded-full">{group.reports.length} {language === "en" ? "Total" : "Jumla"}</span>

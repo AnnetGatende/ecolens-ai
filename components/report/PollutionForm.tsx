@@ -56,7 +56,7 @@ export default function PollutionForm({ image, latitude, longitude }: Props) {
   const [category, setCategory] = useState("");
   const [severity, setSeverity] = useState("");
   const [loading, setLoading] = useState(false);
-  const [locationString, setLocationString] = useState("Unknown Location");
+  const [locationString, setLocationString] = useState("County - Mombasa"); 
 
   const [errors, setErrors] = useState({
     image: false,
@@ -68,7 +68,68 @@ export default function PollutionForm({ image, latitude, longitude }: Props) {
     async function fetchFormattedLocation() {
       if (latitude !== null && longitude !== null) {
         const data = await reverseGeocode(latitude, longitude);
-        setLocationString(data.displayLocation);
+        
+        // --- STRICT KENYAN ADMINISTRATIVE HIERARCHY FORMATTER ---
+        
+        // Helper to detect invalid/messy data
+        const isBad = (str: string | null | undefined) => 
+          !str || 
+          str.toLowerCase().includes("unknown") || 
+          str.toLowerCase().includes("unnamed") || 
+          str.toLowerCase().includes("null");
+
+        // 1. Extract raw data and aggressively strip out redundant words
+        let rawCounty = (data.county || "Mombasa").replace(/county/gi, "").trim();
+        let rawSubCounty = (data.subCounty || "").replace(/(sub-?county|ward)/gi, "").trim();
+        let rawWard = (data.ward || "").replace(/(ward|sub-?county)/gi, "").trim();
+
+        // 2. The Mombasa Smart-Swap
+        // APIs often flip Ward and Sub-County in Kenya. Let's force correction.
+        const mombasaSubCounties = ["likoni", "mvita", "nyali", "kisauni", "jomvu", "changamwe"];
+        
+        // If the API put a known Sub-County into the 'Ward' slot, swap them!
+        if (mombasaSubCounties.includes(rawWard.toLowerCase())) {
+            const temp = rawSubCounty;
+            rawSubCounty = rawWard;
+            rawWard = temp;
+        }
+
+        // 3. Fallback Parser (If the API only returned a single string)
+        if (isBad(rawSubCounty) || isBad(rawWard)) {
+           const stringParts = (data.displayLocation || "")
+                .split(",")
+                .map((p: string) => p.replace(/(county|sub-county|ward)/ig, '').trim())
+                .filter((p: string) => !isBad(p) && p.toLowerCase() !== "kenya" && p.toLowerCase() !== "mombasa");
+           
+           // Search the string for a known Sub-County
+           const subCountyMatch = stringParts.find(p => mombasaSubCounties.includes(p.toLowerCase()));
+           if (subCountyMatch) {
+               rawSubCounty = subCountyMatch;
+               // The Ward is whatever is left over
+               rawWard = stringParts.find(p => p !== subCountyMatch) || rawWard;
+           }
+        }
+
+        // 4. Build the final strict hierarchy
+        const formattedParts: string[] = [];
+        
+        // A. Capitalize and add County
+        const cleanCounty = rawCounty.charAt(0).toUpperCase() + rawCounty.slice(1);
+        formattedParts.push(`County - ${isBad(rawCounty) ? "Mombasa" : cleanCounty}`);
+
+        // B. Capitalize and add Sub-County
+        if (!isBad(rawSubCounty)) {
+          const cleanSub = rawSubCounty.charAt(0).toUpperCase() + rawSubCounty.slice(1);
+          formattedParts.push(`Sub-County - ${cleanSub}`);
+        }
+
+        // C. Capitalize and add Ward (Ensuring it isn't just a duplicate of the Sub-County)
+        if (!isBad(rawWard) && rawWard.toLowerCase() !== rawSubCounty.toLowerCase()) {
+           const cleanWard = rawWard.charAt(0).toUpperCase() + rawWard.slice(1);
+          formattedParts.push(`Ward - ${cleanWard}`);
+        }
+
+        setLocationString(formattedParts.join(", "));
       }
     }
     fetchFormattedLocation();
@@ -120,6 +181,9 @@ export default function PollutionForm({ image, latitude, longitude }: Props) {
         return;
       }
 
+      // --- INSTANT CACHE REFRESH ---
+      router.refresh();
+      
       router.push(`/analysis/${data.reportId}`);
     } catch (error) {
       console.error(error);

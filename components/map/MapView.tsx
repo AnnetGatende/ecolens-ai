@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import MapGL, { Marker, NavigationControl, FullscreenControl, MapRef, ViewStateChangeEvent } from "react-map-gl/maplibre";
 import Supercluster from "supercluster";
 import { BBox } from "geojson";
-import { Search, Calendar, ChevronDown } from "lucide-react";
+import { Search, Calendar, ChevronDown, MapPin } from "lucide-react";
 
 import MapLegend from "./MapLegend";
 import ClusterPopup from "./ClusterPopup";
@@ -287,6 +287,40 @@ export default function MapView() {
           </div>
         </div>
       </div>
+
+      {/* --- FRIENDLY EMPTY STATE FEEDBACK (Empty Database) --- */}
+      {reports.length === 0 && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md px-8 py-6 rounded-3xl shadow-2xl border border-slate-200 flex flex-col items-center text-center animate-in fade-in zoom-in duration-500 pointer-events-none">
+          <div className="bg-emerald-100 p-4 rounded-full mb-3 shadow-inner">
+             <MapPin className="h-8 w-8 text-emerald-600" />
+          </div>
+          <h3 className="text-xl font-extrabold text-slate-800">
+            {language === "en" ? "Map is Clear" : "Ramani ni Safi"}
+          </h3>
+          <p className="text-sm text-slate-500 mt-2 max-w-[250px]">
+            {language === "en" 
+              ? "There are currently no active pollution reports in the database." 
+              : "Hakuna ripoti za uchafuzi zinazoendelea kwa sasa."}
+          </p>
+        </div>
+      )}
+
+      {/* --- FRIENDLY EMPTY STATE FEEDBACK (No Search Results) --- */}
+      {reports.length > 0 && filteredReports.length === 0 && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 bg-white/90 backdrop-blur-md px-8 py-6 rounded-3xl shadow-2xl border border-slate-200 flex flex-col items-center text-center animate-in fade-in zoom-in duration-500 pointer-events-none">
+          <div className="bg-slate-100 p-4 rounded-full mb-3 shadow-inner">
+             <Search className="h-8 w-8 text-slate-400" />
+          </div>
+          <h3 className="text-xl font-extrabold text-slate-800">
+            {language === "en" ? "No Reports Found" : "Hakuna Ripoti"}
+          </h3>
+          <p className="text-sm text-slate-500 mt-2 max-w-[250px]">
+            {language === "en" 
+              ? "Try adjusting your search or timeframe filters." 
+              : "Jaribu kubadilisha vigezo vya utafutaji."}
+          </p>
+        </div>
+      )}
 
       <MapLegend />
 
