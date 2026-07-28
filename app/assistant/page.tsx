@@ -23,7 +23,7 @@ export default function AssistantPage() {
       <div className="w-full max-w-4xl overflow-hidden rounded-3xl border border-slate-200 shadow-2xl relative aspect-video bg-slate-100">
         <iframe 
           className="absolute top-0 left-0 w-full h-full"
-          src="https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE" 
+          src="https://www.youtube.com/embed/Z4_vvnweUpE" 
           title={language === "en" ? "EcoLens User Guide" : "Mwongozo wa EcoLens"}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
           allowFullScreen
