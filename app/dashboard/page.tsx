@@ -257,19 +257,32 @@ export default function DashboardPage() {
       let locName = language === "en" ? "Unmapped Zone" : "Eneo Lisilojulikana";
       
       if (report.displayLocation) {
-        // Split the location string by commas and clean up spaces
         const parts = report.displayLocation.split(',').map(p => p.trim());
         
-        // If the first part is generically "Mombasa", skip it and grab the specific Ward/Sub-county next to it
-        if (parts.length > 1 && (parts[0].toLowerCase() === "mombasa" || parts[0].toLowerCase() === "mombasa county")) {
-          locName = parts[1];
-        } else {
-          // Otherwise, the first part is already the specific local area
-          locName = parts[0];
-        }
+        // 1. Actively hunt for the Ward or Sub-County labels
+        const wardPart = parts.find(p => p.toLowerCase().includes("ward -"));
+        const subCountyPart = parts.find(p => p.toLowerCase().includes("sub-county -"));
         
-        // Clean up any extra prefixes
-        locName = locName.replace(/^County\s*-\s*/i, "").trim();
+        if (wardPart) {
+          // Extracts just the ward name (e.g., "Mtwapa" from "Ward - Mtwapa")
+          locName = wardPart.replace(/ward\s*-\s*/i, "").trim();
+        } else if (subCountyPart) {
+          // Extracts just the sub-county name if no ward exists
+          locName = subCountyPart.replace(/sub-county\s*-\s*/i, "").trim();
+        } else {
+          // 2. Fallback for older messy strings without labels
+          const genericWords = ["kenya", "mombasa", "mombasa county", "kilifi", "kilifi county", "county"];
+          const filteredParts = parts.filter(p => {
+            const clean = p.toLowerCase().replace(/^county\s*-\s*/i, "").trim();
+            return !genericWords.includes(clean);
+          });
+          
+          if (filteredParts.length > 0) {
+            locName = filteredParts[filteredParts.length - 1]; 
+          } else {
+            locName = parts[0].replace(/^county\s*-\s*/i, "").trim();
+          }
+        }
       }
 
       if (!aggregated.has(locName)) {
