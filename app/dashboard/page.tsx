@@ -11,7 +11,7 @@ import { useLanguage } from "@/components/LanguageContext";
 import { logoutAdmin } from "@/app/actions/auth";
 import { getAdminData, saveAdminProfile } from "@/app/actions/admin";
 import Link from "next/link";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 type Report = {
   id: string;
@@ -43,13 +43,12 @@ type ActiveTab = "dispatch" | "analytics" | "settings" | "map" | "report";
 
 export default function DashboardPage() {
   const { language, setLanguage } = useLanguage();
-  const router = useRouter(); // Added router for background refreshing
+  const router = useRouter(); 
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("dispatch");
   const [dispatchSubTab, setDispatchSubTab] = useState<DispatchSubTab>("live");
   const [viewingReportId, setViewingReportId] = useState<string | null>(null);
   
-  // Mobile Sidebar State
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
   const [reports, setReports] = useState<Report[]>([]);
@@ -59,10 +58,8 @@ export default function DashboardPage() {
   const [processing, setProcessing] = useState<Record<string, boolean>>({});
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
-  // API Health Telemetry State
   const [apiHealth, setApiHealth] = useState<{ status: string; message: string } | null>(null);
   
-  // LIVE SUPABASE PROFILE & ADMIN TRACKING STATE
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [adminCount, setAdminCount] = useState(1);
   const [adminProfile, setAdminProfile] = useState({
@@ -72,7 +69,6 @@ export default function DashboardPage() {
   });
   const [editForm, setEditForm] = useState({ name: "", role: "" });
 
-  // --- STATE PERSISTENCE HANDLERS ---
   const changeTab = (tab: ActiveTab) => {
     setActiveTab(tab);
     localStorage.setItem("ecolens_active_tab", tab);
@@ -258,11 +254,23 @@ export default function DashboardPage() {
     const aggregated = new Map<string, { reports: number, maxAQI: number }>();
 
     visibleReports.forEach((report) => {
-      let locName = report.displayLocation 
-        ? report.displayLocation.split(',')[0].trim() 
-        : (language === "en" ? "Unmapped Zone" : "Eneo Lisilojulikana");
+      let locName = language === "en" ? "Unmapped Zone" : "Eneo Lisilojulikana";
       
-      locName = locName.replace(/^County\s*-\s*/i, "").trim();
+      if (report.displayLocation) {
+        // Split the location string by commas and clean up spaces
+        const parts = report.displayLocation.split(',').map(p => p.trim());
+        
+        // If the first part is generically "Mombasa", skip it and grab the specific Ward/Sub-county next to it
+        if (parts.length > 1 && (parts[0].toLowerCase() === "mombasa" || parts[0].toLowerCase() === "mombasa county")) {
+          locName = parts[1];
+        } else {
+          // Otherwise, the first part is already the specific local area
+          locName = parts[0];
+        }
+        
+        // Clean up any extra prefixes
+        locName = locName.replace(/^County\s*-\s*/i, "").trim();
+      }
 
       if (!aggregated.has(locName)) {
         aggregated.set(locName, { reports: 0, maxAQI: 0 });
@@ -277,12 +285,11 @@ export default function DashboardPage() {
 
     return Array.from(aggregated.entries())
       .map(([name, data]) => ({
-        name: name.length > 15 ? name.substring(0, 15) + "..." : name,
+        name: name.length > 25 ? name.substring(0, 25) + "..." : name,
         reports: data.reports,
         maxAQI: data.maxAQI
       }))
-      .sort((a, b) => b.reports - a.reports)
-      .slice(0, 8);
+      .sort((a, b) => b.reports - a.reports);
   }, [liveReports, reviewReports, language]);
 
   const activeIncidents = liveReports.filter(r => r.status !== "RESOLVED").length;
@@ -779,7 +786,7 @@ export default function DashboardPage() {
                 {chartData.length > 0 ? (
                   <div className="h-[300px] sm:h-[400px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 50 }}>
+                      <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 80 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                         <XAxis 
                           dataKey="name" 
@@ -788,24 +795,44 @@ export default function DashboardPage() {
                           tick={{ fill: '#64748b', fontSize: 11 }}
                           angle={-45}
                           textAnchor="end"
-                          height={70}
+                          interval={0}
+                          height={80}
                         />
                         <YAxis 
+                          yAxisId="left"
                           allowDecimals={false}
                           axisLine={false}
                           tickLine={false}
                           tick={{ fill: '#64748b', fontSize: 12 }}
                         />
+                        <YAxis 
+                          yAxisId="right"
+                          orientation="right"
+                          allowDecimals={false}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#f59e0b', fontSize: 12 }}
+                        />
                         <Tooltip 
                           cursor={{ fill: '#f1f5f9' }}
                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         />
+                        <Legend wrapperStyle={{ paddingTop: '20px' }} />
                         <Bar 
+                          yAxisId="left"
                           dataKey="reports" 
                           fill="#10b981" 
-                          radius={[6, 6, 0, 0]}
-                          name={language === "en" ? "Reports" : "Ripoti"}
-                          barSize={30}
+                          radius={[4, 4, 0, 0]}
+                          name={language === "en" ? "Total Reports" : "Jumla ya Ripoti"}
+                          barSize={20}
+                        />
+                        <Bar 
+                          yAxisId="right"
+                          dataKey="maxAQI" 
+                          fill="#f59e0b" 
+                          radius={[4, 4, 0, 0]}
+                          name={language === "en" ? "Max AQI Severity" : "Kiwango cha Juu cha AQI"}
+                          barSize={20}
                         />
                       </BarChart>
                     </ResponsiveContainer>
